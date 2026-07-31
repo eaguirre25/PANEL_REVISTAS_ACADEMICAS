@@ -68,17 +68,47 @@ instala lo que falte y abre el panel.
 
 ### Configuración opcional
 
-| Archivo | Para qué |
-|---|---|
-| `config_local.json` | tu correo de contacto para las APIs (mejores límites de uso) |
-| `config_email.json` | credenciales SMTP, solo si querés que el boletín se envíe |
+| Archivo | Para qué | ¿Se versiona? |
+|---|---|---|
+| `config_local.json` | tu correo de contacto para las APIs (mejores límites de uso) | no |
+| `config_email.json` | credenciales SMTP, para que el boletín se envíe | **no** |
+| `config_sitio.json` | endpoint del formulario de suscripción del sitio | sí |
 
-Ambos tienen su `.ejemplo.json` al lado y están en `.gitignore`.
+Los dos primeros tienen su `.ejemplo.json` al lado y están en `.gitignore`.
 
-> **Sobre la contraseña del correo:** si usás Gmail, no pongas la de tu cuenta.
-> Generá una [contraseña de aplicación](https://myaccount.google.com/apppasswords)
-> y usá esa. Sin configurar nada, el boletín igual se genera como HTML en
-> `informes/`.
+### Enviar el boletín desde tu correo
+
+1. Copiá `config_email.ejemplo.json` como `config_email.json`
+2. Completá servidor, puerto, usuario y contraseña
+3. Con Gmail, **no pongas la contraseña de tu cuenta**: generá una
+   [contraseña de aplicación](https://myaccount.google.com/apppasswords)
+   (requiere verificación en dos pasos activada) y usá esa
+4. Verificá antes de esperar al lunes:
+
+```bash
+python probar_correo.py
+```
+
+Manda un mensaje de prueba y, si algo falla, dice qué revisar en lugar de
+mostrar el error crudo.
+
+| Proveedor | servidor | puerto |
+|---|---|---|
+| Gmail | `smtp.gmail.com` | 465 |
+| Outlook / Microsoft 365 | `smtp.office365.com` | 587 |
+| Yahoo | `smtp.mail.yahoo.com` | 465 |
+| Zoho | `smtp.zoho.com` | 465 |
+
+Sin configurar nada el boletín igual se genera como HTML en `informes/`;
+simplemente no se manda.
+
+### Recibir suscripciones desde el sitio público
+
+Un sitio estático no puede recibir los datos de un formulario: hace falta un
+servicio que acepte el POST. La URL va en `config_sitio.json`, clave
+`formulario_endpoint` — sirve Formspree, Getform, FormSubmit, Basin o similar.
+Ese archivo **sí se versiona** (el workflow lo necesita) y no contiene nada
+secreto: el endpoint queda visible en el HTML de todas formas.
 
 ### Actualización automática
 
