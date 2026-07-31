@@ -325,12 +325,12 @@ footer a{color:var(--a1)}
     <p>Todos los lunes te llega un correo con las convocatorias que están por
       vencer, las nuevas de la semana y el tema de cada dossier. Dejás tu
       nombre y tu correo, nada más.</p>
-    <form class="susForm" id="susForm" data-modo="correo">
+    <form class="susForm" id="susForm" action="https://formsubmit.co/aguirre.elias.gonzalo@gmail.com" method="POST">
       <input type="text" name="nombre" id="susNombre" required
              placeholder="Nombre completo" autocomplete="name">
       <input type="email" name="email" id="susEmail" required
              placeholder="Correo electrónico" autocomplete="email">
-      <button type="submit">Suscribirme</button></form>
+      <button type="submit">Suscribirme</button><input type="hidden" name="_subject" value="Nueva suscripcion al panel de revistas"><input type="hidden" name="_template" value="table"><input type="hidden" name="_captcha" value="false"><input type="hidden" name="_next" value="https://eaguirre25.github.io/PANEL_REVISTAS_ACADEMICAS/gracias.html"><input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off" aria-hidden="true"></form>
     <div id="susEstado"></div>
     <p class="nota">Tu correo se usa únicamente para enviarte este resumen.
       Cada envío incluye un enlace para darte de baja en un clic.</p>
@@ -367,7 +367,7 @@ footer a{color:var(--a1)}
 </div></main>
 
 <footer><div class="env">
-  Instantánea generada el 31/07/2026 19:36. Los datos provienen de
+  Instantánea generada el 31/07/2026 19:46. Los datos provienen de
   CAICYT-CONICET, Elsevier, SciELO, DOAJ y OpenAlex, y se rigen por sus propias
   condiciones de uso. El código es MIT.<br>
   Esta página es estática: para el panel completo con actualización automática

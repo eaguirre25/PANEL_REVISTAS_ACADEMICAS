@@ -22,6 +22,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 DOCS = os.path.join(BASE, 'docs')
 CONFIG_SITIO = os.path.join(BASE, 'config_sitio.json')
 REPO = "https://github.com/eaguirre25/PANEL_REVISTAS_ACADEMICAS"
+SITIO = "https://eaguirre25.github.io/PANEL_REVISTAS_ACADEMICAS"
 
 
 def _config():
@@ -38,17 +39,17 @@ def formulario_suscripcion():
     """
     HTML del formulario del boletín.
 
-    Un sitio estático no puede recibir los datos por sí mismo. Hay dos modos:
+    Un sitio estático no puede recibir los datos por sí mismo: hace falta un
+    servicio que acepte el POST y le avise al administrador. La URL se define
+    en config_sitio.json bajo "formulario_endpoint".
 
-      1. Con "formulario_endpoint" en config_sitio.json, el formulario hace POST
-         a ese servicio (Formspree, Getform, FormSubmit, Basin…).
-      2. Sin endpoint, el formulario arma un correo con los datos ya escritos y
-         lo abre en el cliente del visitante. No es tan prolijo, pero funciona
-         sin depender de ningún servicio ni cuenta de terceros — mejor que
-         mostrar un cartel de "todavía no está disponible".
+    Con endpoint configurado el envío es directo: el visitante completa,
+    aprieta el botón y listo. Sin endpoint queda el modo de reserva, que abre
+    un correo ya escrito en el cliente del visitante — funciona sin depender
+    de nadie, pero le traslada el trabajo de enviarlo.
 
-    La dirección se ensambla en JS para que los recolectores de spam no la
-    levanten del HTML.
+    Los campos que empiezan con guion bajo son de FormSubmit; otros servicios
+    los ignoran sin romperse.
     """
     cfg = _config()
     endpoint = (cfg.get('formulario_endpoint') or '').strip()
@@ -61,10 +62,18 @@ def formulario_suscripcion():
       <button type="submit">Suscribirme</button>'''
 
     if endpoint:
-        return (f'<form class="susForm" id="susForm" action="{endpoint}" '
-                f'method="POST">{campos}'
-                '<input type="hidden" name="_subject" '
-                'value="Nueva suscripcion al panel de revistas"></form>')
+        return (
+            f'<form class="susForm" id="susForm" action="{endpoint}" '
+            f'method="POST">{campos}'
+            '<input type="hidden" name="_subject" '
+            'value="Nueva suscripcion al panel de revistas">'
+            '<input type="hidden" name="_template" value="table">'
+            '<input type="hidden" name="_captcha" value="false">'
+            f'<input type="hidden" name="_next" value="{SITIO}/gracias.html">'
+            # Trampa para robots: un campo que una persona nunca completa.
+            '<input type="text" name="_honey" style="display:none" '
+            'tabindex="-1" autocomplete="off" aria-hidden="true">'
+            '</form>')
 
     return f'<form class="susForm" id="susForm" data-modo="correo">{campos}</form>'
 
@@ -828,6 +837,45 @@ def construir_html(revistas, convocatorias, estados, stats):
 </body></html>"""
 
 
+def construir_gracias():
+    """Página a la que vuelve el visitante después de suscribirse."""
+    return f"""<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Listo · Panel de revistas académicas</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet">
+<style>{CSS}
+.centro{{max-width:640px;margin:0 auto;padding:70px 22px;text-align:center}}
+.tilde{{width:74px;height:74px;border-radius:50%;background:var(--grad);
+  color:#fff;font-size:37px;line-height:74px;margin:0 auto 22px;
+  box-shadow:var(--sombraAlta)}}
+.centro h1{{font-size:clamp(25px,4vw,36px);margin-bottom:14px}}
+.centro p{{color:var(--fg2);font-size:16px;margin:0 auto 16px;max-width:52ch}}
+.volver{{display:inline-block;margin-top:20px;background:var(--grad);color:#fff;
+  text-decoration:none;padding:13px 26px;border-radius:12px;font-weight:700;
+  box-shadow:var(--sombraAlta)}}
+</style>
+</head><body>
+<div class="bgfx"><div class="b1"></div><div class="b2"></div>
+  <div class="b3"></div><div class="b4"></div></div>
+<div class="wrap"><div class="centro">
+  <div class="tilde">✓</div>
+  <h1>Listo, ya estás suscripto</h1>
+  <p>Te va a llegar un correo de confirmación en unos minutos, y a partir del
+    <b>próximo lunes</b> el resumen semanal de convocatorias.</p>
+  <p style="font-size:14.5px;color:var(--fg3);">Si no lo ves, revisá la carpeta
+    de spam y marcalo como correo deseado: así los siguientes te llegan a la
+    bandeja de entrada.</p>
+  <a class="volver" href="{SITIO}/">← Volver al panel</a>
+</div></div>
+</body></html>"""
+
+
 def generar():
     os.makedirs(DOCS, exist_ok=True)
     revistas, convocatorias, estados, stats = reunir_datos()
@@ -836,6 +884,9 @@ def generar():
     ruta = os.path.join(DOCS, 'index.html')
     with open(ruta, 'w', encoding='utf-8') as f:
         f.write(html)
+
+    with open(os.path.join(DOCS, 'gracias.html'), 'w', encoding='utf-8') as f:
+        f.write(construir_gracias())
 
     # .nojekyll evita que GitHub Pages procese el sitio con Jekyll.
     open(os.path.join(DOCS, '.nojekyll'), 'w').close()

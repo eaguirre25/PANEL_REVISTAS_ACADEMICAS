@@ -106,9 +106,32 @@ simplemente no se manda.
 
 Un sitio estático no puede recibir los datos de un formulario: hace falta un
 servicio que acepte el POST. La URL va en `config_sitio.json`, clave
-`formulario_endpoint` — sirve Formspree, Getform, FormSubmit, Basin o similar.
-Ese archivo **sí se versiona** (el workflow lo necesita) y no contiene nada
-secreto: el endpoint queda visible en el HTML de todas formas.
+`formulario_endpoint`. Ese archivo **sí se versiona** (el workflow lo necesita)
+y no contiene nada secreto: el endpoint queda visible en el HTML de todas
+formas.
+
+Está configurado con **FormSubmit**, que no requiere crear cuenta. Cada
+suscripción llega como correo a la dirección del endpoint.
+
+**Activación (una sola vez).** FormSubmit exige confirmar la dirección antes
+del primer envío real:
+
+1. Entrá al sitio y suscribite vos mismo con tu nombre y correo
+2. Te llega un correo de FormSubmit con un botón de activación — hacé clic
+3. Desde ahí, todas las suscripciones llegan a tu casilla
+
+**Recomendado después de activar:** FormSubmit devuelve un alias con forma
+`https://formsubmit.co/xxxxxxxxxxxxxxxx`, que apunta al mismo correo sin
+exponerlo en el HTML. Reemplazá el endpoint por ese alias en
+`config_sitio.json` y volvé a generar el sitio.
+
+Si el endpoint queda vacío, el formulario cae a un modo de reserva que abre un
+correo ya escrito en el cliente del visitante: funciona sin depender de nadie,
+pero le traslada el trabajo de enviarlo.
+
+**Del formulario a la base.** Las suscripciones llegan por correo; para que
+empiecen a recibir el boletín hay que darlas de alta en la pestaña
+**✉️ Boletín** de la app local, que además dispara el correo de bienvenida.
 
 ### Actualización automática
 

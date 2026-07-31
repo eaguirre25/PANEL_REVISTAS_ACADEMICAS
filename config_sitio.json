@@ -6,9 +6,18 @@
     "el HTML de todas formas.",
     "",
     "formulario_endpoint: URL que recibe el POST del formulario de",
-    "suscripción. Un sitio estático no puede recibirlo por sí mismo. Sirve",
-    "cualquier servicio de formularios; ver el README, sección Boletín.",
-    "Vacío = la sección muestra que la suscripción no está activa todavía."
+    "suscripción. Un sitio estático no puede recibirlo por sí mismo.",
+    "",
+    "Está usando FormSubmit, que no requiere crear cuenta: cada suscripción",
+    "llega como correo a la dirección del endpoint. La primera vez hay que",
+    "activarlo (ver README, sección Boletín).",
+    "",
+    "RECOMENDADO una vez activado: FormSubmit da un alias con forma",
+    "https://formsubmit.co/xxxxxxxxxxxxxxxx que apunta al mismo correo sin",
+    "exponerlo. Reemplazalo acá y volvé a generar el sitio.",
+    "",
+    "Vacío = el formulario cae al modo de reserva, que abre un correo ya",
+    "escrito en el cliente del visitante."
   ],
-  "formulario_endpoint": ""
+  "formulario_endpoint": "https://formsubmit.co/aguirre.elias.gonzalo@gmail.com"
 }
