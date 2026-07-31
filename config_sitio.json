@@ -1,0 +1,14 @@
+{
+  "_nota": [
+    "Configuración del sitio público (docs/). ESTE ARCHIVO SÍ SE VERSIONA:",
+    "el robot de GitHub Actions lo necesita para regenerar el sitio con el",
+    "formulario. No pongas nada secreto acá — el endpoint termina visible en",
+    "el HTML de todas formas.",
+    "",
+    "formulario_endpoint: URL que recibe el POST del formulario de",
+    "suscripción. Un sitio estático no puede recibirlo por sí mismo. Sirve",
+    "cualquier servicio de formularios; ver el README, sección Boletín.",
+    "Vacío = la sección muestra que la suscripción no está activa todavía."
+  ],
+  "formulario_endpoint": ""
+}
