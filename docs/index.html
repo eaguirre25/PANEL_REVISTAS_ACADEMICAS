@@ -6,218 +6,264 @@
 <meta name="description" content="Convocatorias y llamados a dossier abiertos
  en 502 revistas de ciencias sociales y humanidades de
  25 países de Iberoamérica.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box}
 :root{
-  --bg:#fbfbfc; --sup:#ffffff; --bg2:#f2f4f7; --fg:#14161a; --fg2:#5c6572;
-  --linea:#e2e6ec; --linea2:#cdd4de;
-  --acento:#2450c5; --acento-bg:#e9effc;
-  --r0:#c81e1e; --r0bg:#fdeaea; --r1:#c2410c; --r1bg:#fdf0e7;
-  --r2:#916309; --r2bg:#fcf5e3; --r3:#15803d; --r3bg:#eaf6ee;
-  --r4:#5c6572; --r4bg:#f0f2f5;
-  --sombra:0 1px 2px rgba(16,20,28,.05);
+  --a1:#0891b2; --a2:#059669; --a3:#7c3aed;
+  --grad:linear-gradient(135deg,var(--a1),var(--a2));
+  --pag:#fbfbfe; --sup:rgba(255,255,255,.72); --sup2:rgba(255,255,255,.62);
+  --borde:rgba(255,255,255,.75); --borde2:rgba(24,20,37,.12);
+  --fg:#181425; --fg2:#4b5265; --fg3:#6b7280; --fg4:#9ca3af;
+  --chip:#eef2f6; --chipFg:#475569;
+  --sombra:0 6px 20px rgba(15,23,42,.06);
+  --sombraAlta:0 16px 40px rgba(8,145,178,.28);
+  --op:.30;
 }
-@media (prefers-color-scheme:dark){:root{
-  --bg:#0d0f13; --sup:#14171d; --bg2:#1a1e26; --fg:#e9ecf1; --fg2:#98a2b3;
-  --linea:#242932; --linea2:#333a46;
-  --acento:#8badff; --acento-bg:#182238;
-  --r0:#ff8080; --r0bg:#2b1517; --r1:#ffa25c; --r1bg:#2a1a12;
-  --r2:#f5cf5a; --r2bg:#282111; --r3:#6ee7a0; --r3bg:#12241a;
-  --r4:#98a2b3; --r4bg:#1c2029;
-  --sombra:0 1px 2px rgba(0,0,0,.3);
-}}
 :root[data-theme=dark]{
-  --bg:#0d0f13; --sup:#14171d; --bg2:#1a1e26; --fg:#e9ecf1; --fg2:#98a2b3;
-  --linea:#242932; --linea2:#333a46;
-  --acento:#8badff; --acento-bg:#182238;
-  --r0:#ff8080; --r0bg:#2b1517; --r1:#ffa25c; --r1bg:#2a1a12;
-  --r2:#f5cf5a; --r2bg:#282111; --r3:#6ee7a0; --r3bg:#12241a;
-  --r4:#98a2b3; --r4bg:#1c2029;
-  --sombra:0 1px 2px rgba(0,0,0,.3);
+  --a1:#22d3ee; --a2:#34d399; --a3:#a78bfa;
+  --pag:#0b0d12; --sup:rgba(30,35,45,.72); --sup2:rgba(30,35,45,.55);
+  --borde:rgba(255,255,255,.09); --borde2:rgba(255,255,255,.14);
+  --fg:#eceef4; --fg2:#b3bccb; --fg3:#8e99ab; --fg4:#6b7688;
+  --chip:rgba(255,255,255,.08); --chipFg:#b3bccb;
+  --sombra:0 6px 20px rgba(0,0,0,.35);
+  --sombraAlta:0 16px 40px rgba(0,0,0,.5);
+  --op:.20;
 }
-:root[data-theme=light]{
-  --bg:#fbfbfc; --sup:#ffffff; --bg2:#f2f4f7; --fg:#14161a; --fg2:#5c6572;
-  --linea:#e2e6ec; --linea2:#cdd4de;
-  --acento:#2450c5; --acento-bg:#e9effc;
-  --r0:#c81e1e; --r0bg:#fdeaea; --r1:#c2410c; --r1bg:#fdf0e7;
-  --r2:#916309; --r2bg:#fcf5e3; --r3:#15803d; --r3bg:#eaf6ee;
-  --r4:#5c6572; --r4bg:#f0f2f5;
-  --sombra:0 1px 2px rgba(16,20,28,.05);
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme=light]){
+    --a1:#22d3ee; --a2:#34d399; --a3:#a78bfa;
+    --pag:#0b0d12; --sup:rgba(30,35,45,.72); --sup2:rgba(30,35,45,.55);
+    --borde:rgba(255,255,255,.09); --borde2:rgba(255,255,255,.14);
+    --fg:#eceef4; --fg2:#b3bccb; --fg3:#8e99ab; --fg4:#6b7688;
+    --chip:rgba(255,255,255,.08); --chipFg:#b3bccb;
+    --sombra:0 6px 20px rgba(0,0,0,.35);
+    --sombraAlta:0 16px 40px rgba(0,0,0,.5);
+    --op:.20;
+  }
 }
+
+@keyframes drift1{0%,100%{transform:translate(-4%,-6%) scale(1)}
+  50%{transform:translate(7%,5%) scale(1.18)}}
+@keyframes drift2{0%,100%{transform:translate(5%,4%) scale(1.1)}
+  50%{transform:translate(-7%,-8%) scale(.95)}}
+@keyframes drift3{0%,100%{transform:translate(-4%,5%) scale(1)}
+  50%{transform:translate(8%,-5%) scale(1.15)}}
+
 html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--fg);
-  font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-  -webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
-.env{max-width:1120px;margin:0 auto;padding:0 22px}
+body{margin:0;background:var(--pag);color:var(--fg);
+  font:16px/1.55 Manrope,system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased}
+.env{max-width:1180px;margin:0 auto;padding:0 22px}
+.bgfx{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.bgfx div{position:absolute;border-radius:50%;filter:blur(50px);opacity:var(--op)}
+.b1{top:-12%;left:-12%;width:58vw;height:58vw;
+  background:radial-gradient(circle,#7c3aed,transparent 70%);
+  animation:drift1 22s ease-in-out infinite}
+.b2{top:8%;right:-16%;width:52vw;height:52vw;
+  background:radial-gradient(circle,#0891b2,transparent 70%);
+  animation:drift2 26s ease-in-out infinite}
+.b3{bottom:-16%;left:18%;width:50vw;height:50vw;
+  background:radial-gradient(circle,#059669,transparent 70%);
+  animation:drift3 30s ease-in-out infinite}
+.b4{bottom:2%;right:8%;width:38vw;height:38vw;
+  background:radial-gradient(circle,#f59e0b,transparent 70%);
+  animation:drift1 24s ease-in-out infinite reverse}
+.wrap{position:relative;z-index:1}
+@media (prefers-reduced-motion:reduce){.bgfx div{animation:none}}
 
-/* ── encabezado ───────────────────────────────────────────── */
-header{border-bottom:1px solid var(--linea);background:var(--sup);
-  padding:30px 0 24px}
+header{padding:34px 0 20px}
 .hcab{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
-h1{margin:0 0 6px;font-size:clamp(22px,3.4vw,32px);line-height:1.15;
-  letter-spacing:-.025em;font-weight:700}
-.sub{color:var(--fg2);margin:0;max-width:64ch;font-size:15px}
-.enlaces{margin:16px 0 0;display:flex;gap:16px;flex-wrap:wrap}
-.enlaces a{color:var(--acento);text-decoration:none;font-size:14px;
-  font-weight:550}
-.enlaces a:hover{text-decoration:underline}
-/* Métricas principales; el resto es secundario y no compite.
-   Todas son botones: llevan a la lista que contienen, ya filtrada. */
-.stats{display:grid;gap:9px;margin-top:20px;
-  grid-template-columns:repeat(auto-fit,minmax(148px,1fr))}
-.st{background:var(--bg2);border-radius:10px;padding:11px 13px;border:0;
-  font-family:inherit;text-align:left;cursor:pointer;display:block;width:100%;
-  border:1.5px solid transparent;transition:border-color .12s,transform .12s}
-.st:hover{border-color:var(--acento);transform:translateY(-1px)}
-.st:focus-visible{outline:2px solid var(--acento);outline-offset:2px}
-.st b{display:block;font-size:24px;line-height:1.1;letter-spacing:-.03em;
-  font-variant-numeric:tabular-nums;color:var(--fg)}
-.st span{color:var(--fg2);font-size:12.5px}
-.st.urg{background:var(--r0bg)} .st.urg b{color:var(--r0)}
-.st.urg span{color:var(--r0);opacity:.85}
-.st.urg:hover{border-color:var(--r0)}
-.st.man{background:var(--r2bg)} .st.man b{color:var(--r2)}
-.st.man span{color:var(--r2);opacity:.9}
-.st.man:hover{border-color:var(--r2)}
-.stats2{margin:11px 0 0;color:var(--fg2);font-size:13px;
-  display:flex;gap:4px;flex-wrap:wrap;align-items:center}
-.stats2 button{background:none;border:0;font-family:inherit;font-size:13px;
-  color:var(--fg2);cursor:pointer;padding:3px 7px;border-radius:6px}
-.stats2 button:hover{background:var(--bg2);color:var(--fg)}
-.stats2 button:focus-visible{outline:2px solid var(--acento);outline-offset:1px}
-.stats2 b{color:var(--fg);font-variant-numeric:tabular-nums}
-.firma{margin:14px 0 0;color:var(--fg2);font-size:13px}
-.firma a{color:var(--acento);text-decoration:none}
-.firma a:hover{text-decoration:underline}
-
-/* ── navegación ───────────────────────────────────────────── */
-nav{position:sticky;top:0;z-index:20;background:var(--sup);
-  border-bottom:1px solid var(--linea);overflow-x:auto;
-  scrollbar-width:none}
-nav::-webkit-scrollbar{display:none}
-nav .env{display:flex;gap:2px}
-nav button{background:none;border:0;border-bottom:2.5px solid transparent;
-  color:var(--fg2);padding:14px 12px;font-size:14.5px;cursor:pointer;
-  white-space:nowrap;font-family:inherit;font-weight:550}
-nav button:hover{color:var(--fg)}
-nav button[aria-selected=true]{color:var(--acento);
-  border-bottom-color:var(--acento)}
-
-/* ── controles ────────────────────────────────────────────── */
-main{padding:22px 0 70px}
-.controles{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px}
-input[type=search],select{background:var(--sup);color:var(--fg);
-  border:1px solid var(--linea2);border-radius:9px;padding:11px 13px;
-  font-size:15px;font-family:inherit;min-height:44px}
-input[type=search]{flex:1;min-width:200px}
-input[type=search]:focus,select:focus{outline:2px solid var(--acento);
-  outline-offset:-1px;border-color:transparent}
-.conteo{color:var(--fg2);font-size:13.5px;margin:0 0 6px}
-
-/* ── aviso de urgentes ────────────────────────────────────── */
-.urgente{background:var(--r0bg);border:1px solid var(--r0);
-  border-radius:11px;padding:13px 17px;margin-bottom:18px;
-  color:var(--r0);font-weight:600;font-size:15px}
-
-/* ── grupos por urgencia ──────────────────────────────────── */
-.grupo{margin:26px 0 12px;display:flex;align-items:baseline;gap:10px}
-.grupo h2{margin:0;font-size:14px;text-transform:uppercase;
-  letter-spacing:.07em;color:var(--fg2);font-weight:650}
-.grupo .n{color:var(--fg2);font-size:13px;font-variant-numeric:tabular-nums}
-.grupo::after{content:"";flex:1;height:1px;background:var(--linea)}
-
-/* ── tarjeta de convocatoria ──────────────────────────────── */
-.tarj{background:var(--sup);border:1px solid var(--linea);border-radius:12px;
-  margin-bottom:10px;box-shadow:var(--sombra);overflow:hidden;
-  display:grid;grid-template-columns:96px 1fr}
-.tarj:hover{border-color:var(--linea2)}
-.gutter{padding:15px 10px;text-align:center;
-  border-right:1px solid var(--linea);display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:2px}
-.gnum{font-size:25px;font-weight:750;line-height:1;letter-spacing:-.04em;
-  font-variant-numeric:tabular-nums}
-.gtxt{font-size:11px;text-transform:uppercase;letter-spacing:.05em;
-  font-weight:650;opacity:.9}
-.cuerpo{padding:14px 17px;min-width:0}
-.rev{font-weight:650;font-size:15px}
-.tit{margin-top:4px;color:var(--fg);line-height:1.45}
-.tema{margin-top:10px;padding:10px 13px;background:var(--acento-bg);
-  border-radius:8px;font-size:14.5px;line-height:1.45}
-.tema b{color:var(--acento)}
-.meta{margin-top:9px;color:var(--fg2);font-size:12.5px;
-  display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.tarj a{color:var(--acento);font-size:14px;text-decoration:none;
-  font-weight:550;display:inline-block;margin-top:9px}
-.tarj a:hover{text-decoration:underline}
-.cita{font-style:italic;color:var(--fg2);font-size:14px;line-height:1.5;
-  border-left:3px solid var(--r3);padding-left:12px;margin-top:10px}
-.chip{display:inline-block;background:var(--bg2);border-radius:20px;
-  padding:2px 10px;font-size:12px;color:var(--fg2);white-space:nowrap}
-.chip.n1{background:var(--r2bg);color:var(--r2);font-weight:600}
-
-/* ── tabla ────────────────────────────────────────────────── */
-.tablaEnv{overflow-x:auto;border:1px solid var(--linea);border-radius:11px;
-  background:var(--sup)}
-table{border-collapse:collapse;width:100%;font-size:14px;min-width:780px}
-th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--linea);
-  vertical-align:top}
-th{background:var(--bg2);position:sticky;top:50px;font-weight:650;
-  white-space:nowrap;font-size:13px}
-tbody tr:last-child td{border-bottom:0}
-tbody tr:hover{background:var(--bg2)}
-td a{color:var(--acento);text-decoration:none;font-weight:550}
-
-/* ── avisos ───────────────────────────────────────────────── */
-.aviso{background:var(--sup);border:1px solid var(--linea);
-  border-left:4px solid var(--r2);border-radius:11px;padding:17px 20px;
-  margin:26px 0}
-.aviso h3{margin:0 0 10px;font-size:15.5px}
-.aviso ol{margin:0;padding-left:20px}
-.aviso li{margin-bottom:8px;color:var(--fg2);line-height:1.5}
-.aviso li b{color:var(--fg)}
-
-/* ── boletín ──────────────────────────────────────────────── */
-.boletin{background:var(--acento-bg);border:1px solid var(--acento);
-  border-radius:12px;padding:20px 22px;margin:26px 0}
-.boletin h3{margin:0 0 6px;font-size:17px}
-.boletin p{margin:0 0 14px;color:var(--fg2);font-size:14.5px;max-width:62ch}
-.boletin form{display:flex;gap:9px;flex-wrap:wrap}
-.boletin input{flex:1;min-width:190px;background:var(--sup);
-  border:1px solid var(--linea2);border-radius:9px;padding:11px 13px;
-  font-size:15px;font-family:inherit;color:var(--fg);min-height:44px}
-.boletin button{background:var(--acento);color:#fff;border:0;
-  border-radius:9px;padding:11px 22px;font-size:15px;font-weight:600;
-  cursor:pointer;font-family:inherit;min-height:44px}
-.boletin button:hover{filter:brightness(1.08)}
-.boletin .nota{font-size:12.5px;margin:12px 0 0}
-
-footer{border-top:1px solid var(--linea);color:var(--fg2);font-size:13.5px;
-  padding:26px 0 44px;line-height:1.6}
-footer a{color:var(--acento)}
-.oculto{display:none}
-#tema{background:var(--bg2);border:1px solid var(--linea2);color:var(--fg);
-  border-radius:9px;width:42px;height:42px;font-size:17px;cursor:pointer;
+h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;
+  font-size:clamp(27px,4.4vw,48px);line-height:1.06;letter-spacing:-.02em;
+  margin:0 0 12px;background:var(--grad);-webkit-background-clip:text;
+  background-clip:text;color:transparent}
+.sub{margin:0 0 9px;color:var(--fg2);max-width:64ch;font-size:16px}
+.sub b{color:var(--fg)}
+.firma{margin:0 0 22px;color:var(--fg3);font-size:13.5px}
+.firma b{color:var(--fg)}
+.firma a,.enlaces a,.tarj a,.rcard a{color:var(--a1);text-decoration:none;
+  font-weight:650}
+.firma a:hover,.enlaces a:hover,.tarj a:hover,.rcard a:hover{
+  text-decoration:underline}
+#tema{background:var(--sup2);border:1px solid var(--borde);color:var(--fg);
+  border-radius:11px;width:44px;height:44px;font-size:17px;cursor:pointer;
   flex:none}
 
+.stats{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.st{background:var(--sup2);border:1.5px solid var(--borde);border-radius:14px;
+  padding:13px 15px;text-align:left;cursor:pointer;font-family:inherit;
+  box-shadow:var(--sombra);transition:transform .15s}
+.st:hover{transform:translateY(-2px)}
+.st:focus-visible{outline:2px solid var(--a1);outline-offset:2px}
+.st b{display:block;font-family:'Bricolage Grotesque',system-ui,sans-serif;
+  font-size:25px;letter-spacing:-.02em;color:var(--fg)}
+.st span{color:var(--fg3);font-size:12.5px}
+.st.urg{background:rgba(220,38,38,.09);border-color:rgba(220,38,38,.35)}
+.st.urg b,.st.urg span{color:#dc2626}
+:root[data-theme=dark] .st.urg b,:root[data-theme=dark] .st.urg span{color:#fca5a5}
+.st.man{background:rgba(180,83,9,.1);border-color:rgba(180,83,9,.32)}
+.st.man b,.st.man span{color:#b45309}
+:root[data-theme=dark] .st.man b,:root[data-theme=dark] .st.man span{color:#fcd34d}
+.stats2{margin:12px 0 0;display:flex;gap:2px;flex-wrap:wrap;color:var(--fg3);
+  font-size:13px;align-items:center}
+.stats2 button{background:none;border:0;font-family:inherit;font-size:13px;
+  color:var(--fg3);cursor:pointer;padding:4px 9px;border-radius:7px}
+.stats2 button:hover{background:var(--chip);color:var(--fg)}
+.stats2 b{color:var(--fg)}
+.enlaces{display:flex;gap:18px;flex-wrap:wrap;margin-top:18px}
+.enlaces a{font-size:14px}
+
+nav{position:sticky;top:0;z-index:20;background:var(--pag);
+  border-bottom:1px solid var(--borde2)}
+@supports (backdrop-filter:blur(1px)){
+  nav{background:color-mix(in srgb,var(--pag) 80%,transparent);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+}
+nav .env{padding:10px 22px;display:flex;gap:14px;flex-wrap:wrap;
+  align-items:center}
+.segs{display:flex;gap:4px;background:var(--chip);padding:4px;
+  border-radius:12px}
+.segs button{background:none;color:var(--fg2);border:0;border-radius:9px;
+  padding:9px 16px;font-size:14.5px;font-weight:650;cursor:pointer;
+  font-family:inherit;white-space:nowrap}
+.segs button[aria-selected=true]{background:var(--grad);color:#fff}
+input[type=search],select{background:var(--sup);border:1px solid var(--borde2);
+  border-radius:11px;padding:11px 14px;font-size:15px;font-family:inherit;
+  min-height:44px;color:var(--fg)}
+input[type=search]{flex:1;min-width:200px}
+input:focus-visible,select:focus-visible{outline:2px solid var(--a1);
+  outline-offset:-1px}
+
+main{padding:24px 0 80px}
+.conteo{color:var(--fg3);font-size:13.5px;margin:0 0 12px}
+.urgente{background:rgba(220,38,38,.09);border:1px solid rgba(220,38,38,.35);
+  border-radius:14px;padding:14px 18px;margin-bottom:18px;color:#b91c1c;
+  font-weight:650;font-size:15px}
+:root[data-theme=dark] .urgente{color:#fca5a5}
+.urgente.man{background:rgba(180,83,9,.1);border-color:rgba(180,83,9,.32);
+  color:#92400e;font-weight:400}
+:root[data-theme=dark] .urgente.man{color:#fcd34d}
+.grupo{margin:28px 0 12px;display:flex;align-items:baseline;gap:10px}
+.grupo h2{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--fg3);font-weight:700;
+  font-family:'Bricolage Grotesque',system-ui,sans-serif}
+.grupo .n{color:var(--fg4);font-size:12.5px}
+.grupo::after{content:"";flex:1;height:1px;
+  background:linear-gradient(90deg,var(--borde2),transparent)}
+
+/* Las tarjetas NO llevan backdrop-filter: con 174 en pantalla el desenfoque
+   se recalcula en cada scroll y traba el desplazamiento en equipos modestos.
+   El efecto de vidrio se reserva para el nav y los bloques grandes. */
+.tarj{display:grid;grid-template-columns:88px 1fr;background:var(--sup);
+  border:1px solid var(--borde);border-radius:16px;margin-bottom:11px;
+  box-shadow:var(--sombra);overflow:hidden}
+.gutter{padding:14px 6px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:2px}
+.gnum{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;
+  font-size:24px;line-height:1}
+.gtxt{font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+  font-weight:700;opacity:.9}
+.cuerpo{padding:15px 18px;min-width:0}
+.rev{font-weight:700;font-size:15px}
+.tit{margin-top:5px;line-height:1.5;color:var(--fg2)}
+.tema{margin-top:10px;padding:11px 14px;background:rgba(124,58,237,.09);
+  border-radius:10px;font-size:14.5px;line-height:1.5}
+.tema b{color:var(--a1)}
+.meta{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.meta>span.fecha{color:var(--fg3);font-size:12.5px}
+.pais{color:var(--fg4);font-size:12px}
+.chip{background:var(--chip);color:var(--chipFg);border-radius:20px;
+  padding:3px 10px;font-size:11.5px;font-weight:650}
+.cita{font-style:italic;color:var(--fg3);font-size:14px;line-height:1.5;
+  border-left:3px solid #15803d;padding-left:12px;margin-top:10px}
+
+.revgrid{display:grid;gap:13px;
+  grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+.rcard{background:var(--sup);border:1px solid var(--borde);border-radius:14px;
+  padding:15px 18px;display:flex;flex-direction:column;gap:8px;
+  box-shadow:var(--sombra)}
+.rcard .top{display:flex;justify-content:space-between;gap:10px;
+  align-items:baseline}
+.rcard .nombre{font-weight:700;font-size:14.5px}
+.rcard .inst{color:var(--fg3);font-size:12.5px}
+.rcard .issn{color:var(--fg4);font-size:12px}
+.rcard .motivo{color:#b45309;font-size:12.5px;font-weight:650}
+:root[data-theme=dark] .rcard .motivo{color:#fcd34d}
+.masbtn{display:block;margin:18px auto 0;background:var(--sup);
+  border:1px solid var(--borde2);border-radius:11px;padding:11px 22px;
+  font-size:14px;font-weight:650;font-family:inherit;cursor:pointer;
+  color:var(--a1)}
+
+/* ── boletín ─────────────────────────────────────────────────────── */
+.boletin{margin:26px 0 30px;padding:26px 28px;border-radius:20px;
+  background:var(--grad);color:#fff;box-shadow:var(--sombraAlta)}
+.boletin h3{margin:0 0 8px;
+  font-family:'Bricolage Grotesque',system-ui,sans-serif;font-size:21px}
+.boletin p{margin:0 0 16px;opacity:.94;max-width:62ch;font-size:15px}
+.boletin a{color:#fff;text-decoration:underline}
+.boletin .nota{margin:14px 0 0;font-size:12.5px;opacity:.82}
+.susForm{display:flex;gap:9px;flex-wrap:wrap}
+.susForm input{flex:1;min-width:190px;background:rgba(255,255,255,.96);
+  border:0;border-radius:11px;padding:13px 15px;font-size:15px;
+  font-family:inherit;color:#181425;min-height:48px}
+.susForm input:focus-visible{outline:3px solid rgba(255,255,255,.6);
+  outline-offset:1px}
+.susForm button{background:#fff;color:var(--a1);border:0;border-radius:11px;
+  padding:13px 26px;font-size:15px;font-weight:750;cursor:pointer;
+  font-family:inherit;min-height:48px;white-space:nowrap}
+.susForm button:hover{transform:translateY(-1px)}
+.susOk{background:rgba(255,255,255,.18);border-radius:11px;padding:13px 16px;
+  font-size:14.5px;margin:0}
+
+.cobertura{margin-top:32px;background:var(--sup2);border:1px solid var(--borde);
+  border-radius:16px;padding:22px 24px}
+.cobertura h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;
+  font-size:16px;margin:0 0 14px}
+.barra{display:flex;width:100%;height:14px;border-radius:8px;overflow:hidden;
+  background:var(--chip)}
+.leyenda{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;font-size:13px;
+  color:var(--fg2)}
+.leyenda .dot{width:9px;height:9px;border-radius:3px;display:inline-block;
+  margin-right:6px}
+
+.aviso{background:var(--sup2);border:1px solid var(--borde);
+  border-left:4px solid #b45309;border-radius:16px;padding:22px 24px;
+  margin:28px 0}
+.aviso h3{margin:0 0 14px;font-size:15.5px;
+  font-family:'Bricolage Grotesque',system-ui,sans-serif}
+.aviso ol{margin:0;padding-left:20px}
+.aviso li{margin-bottom:10px;color:var(--fg2);line-height:1.55}
+.aviso li b{color:var(--fg)}
+footer{border-top:1px solid var(--borde2);color:var(--fg3);font-size:13.5px;
+  padding:26px 0 50px;line-height:1.6}
+footer a{color:var(--a1)}
+.oculto{display:none}
+
 @media(max-width:760px){
-  .stats{grid-template-columns:repeat(2,1fr)}
-  .st b{font-size:21px}
-  /* Buscador arriba en toda la fila y los dos selectores compartiendo la de
-     abajo: apilados en tres filas empujaban las tarjetas fuera de pantalla. */
-  .controles{gap:8px}
-  .controles input[type=search]{flex:1 0 100%}
-  .controles select{flex:1 1 0;min-width:0}
-  .tarj{grid-template-columns:74px 1fr}
+  .tarj{grid-template-columns:70px 1fr}
   .gnum{font-size:21px}
-  .cuerpo{padding:13px 14px}
-  nav button{padding:13px 9px;font-size:14px}
-  th{top:48px}
-  table{min-width:600px}
-  header{padding:22px 0 20px}
+  header{padding:24px 0 16px}
   .env{padding:0 16px}
+  nav .env{padding:10px 16px;gap:9px}
+  .segs{width:100%;justify-content:space-between}
+  .segs button{flex:1;padding:9px 8px;font-size:13.5px}
+  /* Buscador en una fila entera y los dos selectores compartiendo la de
+     abajo: en una sola fila los tres quedaban ilegibles ("Tod...", "Tod..."). */
+  input[type=search]{flex:1 0 100%;min-width:0}
+  select{flex:1 1 0;min-width:0}
+  .boletin{padding:20px 18px}
+  .susForm input,.susForm button{flex:1 0 100%}
 }
 </style>
 </head><body>
+
+<div class="bgfx"><div class="b1"></div><div class="b2"></div>
+  <div class="b3"></div><div class="b4"></div></div>
+<div class="wrap">
 
 <header><div class="env">
   <div class="hcab">
@@ -248,49 +294,57 @@ footer a{color:var(--acento)}
       <b>88</b><span>requieren revisión manual</span></button>
   </div>
   <p class="stats2">
-    <button data-sec="rev" data-f="n1"><b>178</b> Nivel 1</button>·
-    <button data-sec="rev" data-f="scopus"><b>99</b> en Scopus</button>·
-    <button data-sec="rev" data-f="scielo"><b>130</b> en SciELO</button>·
+    <button data-sec="rev" data-f="n1"><b>178</b> Nivel 1</button>
+    <button data-sec="rev" data-f="scopus"><b>99</b> en Scopus</button>
+    <button data-sec="rev" data-f="scielo"><b>130</b> en SciELO</button>
     <button data-sec="rev" data-f="doaj"><b>329</b> en DOAJ</button>
   </p>
   <p class="enlaces">
     <a href="#boletin">Recibir el resumen semanal →</a>
-    <a href="https://github.com/eaguirre25/PANEL_REVISTAS_ACADEMICAS">Código en GitHub →</a>
+    <a href="https://github.com/eaguirre25/PANEL_REVISTAS_ACADEMICAS" target="_blank" rel="noopener">Código en GitHub →</a>
     <a href="#limitaciones">Qué no cubre →</a>
   </p>
 </div></header>
 
 <nav><div class="env">
-  <button data-s="conv" aria-selected="true">⏱️ Convocatorias</button>
-  <button data-s="perm">♾️ Permanentes</button>
-  <button data-s="rev">🔍 Revistas</button>
+  <div class="segs">
+    <button data-s="conv" aria-selected="true">Convocatorias</button>
+    <button data-s="perm">Permanentes</button>
+    <button data-s="rev">Revistas</button>
+  </div>
+  <input type="search" id="q"
+         placeholder="Buscar por revista, tema, ISSN o institución…">
+  <select id="fPais"></select>
+  <select id="fOrden"></select>
 </div></nav>
 
 <main><div class="env">
-  <div class="controles">
-    <input type="search" id="q" placeholder="Buscar por revista, tema, ISSN o institución…">
-    <select id="fPais"></select>
-    <select id="fOrden"></select>
-  </div>
-  <p class="conteo" id="conteo"></p>
+
+  <section class="boletin" id="boletin">
+    <h3>✉️ Enterate de cada convocatoria, sin buscarla</h3>
+    <p>Todos los lunes te llega un correo con las convocatorias que están por
+      vencer, las nuevas de la semana y el tema de cada dossier. Dejás tu
+      nombre y tu correo, nada más.</p>
+    <form class="susForm" id="susForm" data-modo="correo">
+      <input type="text" name="nombre" id="susNombre" required
+             placeholder="Nombre completo" autocomplete="name">
+      <input type="email" name="email" id="susEmail" required
+             placeholder="Correo electrónico" autocomplete="email">
+      <button type="submit">Suscribirme</button></form>
+    <div id="susEstado"></div>
+    <p class="nota">Tu correo se usa únicamente para enviarte este resumen.
+      Cada envío incluye un enlace para darte de baja en un clic.</p>
+  </section>
+
+  <p class="conteo" id="conteo">Cargando datos…</p>
   <div class="urgente oculto" id="urgente"></div>
   <div id="lista"></div>
 
-  <div class="aviso oculto" id="cobertura">
+  <div class="cobertura oculto" id="cobertura">
     <h3>Qué se pudo revisar y qué no</h3>
-    <div class="tablaEnv"><table style="min-width:0">
-      <thead><tr><th>Resultado del chequeo</th><th>Revistas</th></tr></thead>
-      <tbody><tr><td>sin convocatorias</td><td>173</td></tr><tr><td>sin pagina de anuncios</td><td>96</td></tr><tr><td>no revisada</td><td>80</td></tr><tr><td>ok</td><td>65</td></tr><tr><td>protegido (anti-bot) - revisar a mano</td><td>51</td></tr><tr><td>inaccesible (ConnectTimeout)</td><td>9</td></tr><tr><td>redirecciones</td><td>6</td></tr><tr><td>inaccesible (ConnectionError)</td><td>6</td></tr><tr><td>inaccesible (SSLError)</td><td>5</td></tr><tr><td>http 500</td><td>4</td></tr><tr><td>http 403</td><td>4</td></tr><tr><td>inaccesible (ReadTimeout)</td><td>2</td></tr><tr><td>http 523</td><td>1</td></tr></tbody></table></div>
+    <div class="barra" id="barra"></div>
+    <div class="leyenda" id="leyenda"></div>
   </div>
-
-  <section class="boletin" id="boletin">
-    <h3>✉️ Resumen semanal por correo</h3>
-    <p>Cada lunes: las convocatorias que están por vencer, las nuevas de la
-      semana y el tema de cada dossier. Dejás tu nombre y tu correo, nada más.</p>
-    <p style="margin:0;padding:12px 15px;background:var(--bg2);border-radius:9px;font-size:14.5px;color:var(--fg2);">La suscripción todavía no está activa. Mientras tanto, el resumen se puede generar localmente: ver <a href="https://github.com/eaguirre25/PANEL_REVISTAS_ACADEMICAS#%EF%B8%8F-resumen-semanal-por-correo">las instrucciones</a>.</p>
-    <p class="nota">Tu correo se usa únicamente para enviarte este resumen.
-      Para darte de baja alcanza con responder el correo.</p>
-  </section>
 
   <div class="aviso" id="limitaciones">
     <h3>Antes de confiar en esto para un envío</h3>
@@ -313,18 +367,20 @@ footer a{color:var(--acento)}
 </div></main>
 
 <footer><div class="env">
-  Instantánea generada el 31/07/2026 18:23. Los datos provienen de
+  Instantánea generada el 31/07/2026 19:36. Los datos provienen de
   CAICYT-CONICET, Elsevier, SciELO, DOAJ y OpenAlex, y se rigen por sus propias
   condiciones de uso. El código es MIT.<br>
   Esta página es estática: para el panel completo con actualización automática
-  y boletín por correo, cloná <a href="https://github.com/eaguirre25/PANEL_REVISTAS_ACADEMICAS">el repositorio</a>.
+  y boletín por correo, cloná
+  <a href="https://github.com/eaguirre25/PANEL_REVISTAS_ACADEMICAS" target="_blank" rel="noopener">el repositorio</a>.
 </div></footer>
 
+</div>
 <script>
 // Los datos se cargan desde datos.json en vez de incrustarse en el HTML:
-// al inlinear ~380 KB de JSON el parser cortaba el <script> a la mitad.
-// Además así el HTML queda liviano y los datos se pueden reutilizar aparte.
-let D = {revistas:[], convocatorias:[]};
+// al inlinear ~400 KB de JSON el parser cortaba el <script> a la mitad.
+let D = {revistas:[], convocatorias:[], estadisticas:{}};
+let seccion = 'conv', revLimite = 60;
 const hoy = new Date(); hoy.setHours(0,0,0,0);
 
 function dias(f){
@@ -334,7 +390,6 @@ function dias(f){
   const d = new Date(+p[0], +p[1]-1, +p[2]); d.setHours(0,0,0,0);
   return Math.round((d-hoy)/86400000);
 }
-// Nivel de urgencia: 0 = crítico … 4 = sin fecha. Determina color y grupo.
 function nivelUrg(d){
   if(d===null) return 4;
   if(d<=3) return 0;
@@ -342,228 +397,195 @@ function nivelUrg(d){
   if(d<=21) return 2;
   return 3;
 }
-const PAL = ['--r0','--r1','--r2','--r3','--r4'];
-function color(d){ return 'var('+PAL[nivelUrg(d)]+')'; }
-function colorBg(d){ return 'var('+PAL[nivelUrg(d)]+'bg)'; }
+const GUTTER=[{bg:'#fee2e2',fg:'#b91c1c'},{bg:'#ffe4cc',fg:'#c2410c'},
+  {bg:'#fef3c7',fg:'#a16207'},{bg:'#dcfce7',fg:'#15803d'},
+  {bg:'#eef2f6',fg:'#64748b'}];
+const GRUPOS=[{t:'Cierran en 3 días o menos',u:0},{t:'Esta semana',u:1},
+  {t:'Este mes',u:2},{t:'Más adelante',u:3},
+  {t:'Sin fecha de cierre declarada',u:4}];
 
-// El plazo se parte en número + unidad para que el número domine visualmente:
-// es el dato por el que la gente entra a la página.
 function plazoPartes(d){
   if(d===null) return ['—','sin fecha'];
   if(d<0) return ['—','vencida'];
   if(d===0) return ['hoy','cierra'];
-  return [String(d), d===1 ? 'día' : 'días'];
+  return [String(d), d===1?'día':'días'];
 }
-function etiqueta(d){
-  if(d===null) return 'sin fecha declarada';
-  if(d<0) return 'vencida';
-  if(d===0) return 'cierra hoy';
-  return d===1 ? 'queda 1 día' : 'quedan '+d+' días';
-}
-const GRUPOS = [
-  {t:'Cierran en 3 días o menos', u:0},
-  {t:'Esta semana',               u:1},
-  {t:'Este mes',                  u:2},
-  {t:'Más adelante',              u:3},
-  {t:'Sin fecha de cierre declarada', u:4},
-];
 function esc(s){
   return String(s==null?'':s).replace(/[&<>"']/g,
     c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-function chips(o){
-  const c=[];
-  if(o.nivel_conicet===1) c.push(['Nivel 1','n1']);
-  else if(o.nivel_conicet===2) c.push(['Nivel 2','']);
-  if(o.en_scopus) c.push([String(o.scopus_estado||'').toLowerCase()==='active'
-      ? 'Scopus' : 'Scopus ('+o.scopus_estado+')','']);
-  if(o.en_scielo) c.push(['SciELO','']);
-  if(o.en_doaj) c.push(['DOAJ','']);
-  if(o.pais) c.push([o.pais,'']);
-  return c.map(x=>'<span class="chip '+x[1]+'">'+esc(x[0])+'</span>').join('');
+function badges(r){
+  const b=[];
+  if(r.nivel_conicet===1) b.push(['Nivel 1','#fef3c7','#a16207']);
+  else if(r.nivel_conicet===2) b.push(['Nivel 2','','']);
+  if(r.en_scopus) b.push([String(r.scopus_estado||'').toLowerCase()==='active'
+      ? 'Scopus' : 'Scopus ('+r.scopus_estado+')','#e0e7ff','#4338ca']);
+  if(r.en_scielo) b.push(['SciELO','#dcfce7','#15803d']);
+  if(r.en_doaj) b.push(['DOAJ','#fce7f3','#a21caf']);
+  return b;
 }
-
-function gutter(d){
-  const p = plazoPartes(d);
-  return '<div class="gutter" style="background:'+colorBg(d)+';color:'+color(d)+'">'
-       + '<span class="gnum">'+esc(p[0])+'</span>'
-       + '<span class="gtxt">'+esc(p[1])+'</span></div>';
+function chip(b){
+  const st = b[1] ? ' style="background:'+b[1]+';color:'+b[2]+'"' : '';
+  return '<span class="chip"'+st+'>'+esc(b[0])+'</span>';
 }
 
 function tarjetaConv(c){
-  const d = dias(c.fecha_cierre);
-  let h = '<article class="tarj">' + gutter(d) + '<div class="cuerpo">';
-  h += '<div class="rev">'+esc(c.revista)+'</div>';
-  h += '<div class="tit">'+(c.es_dossier?'📑 ':'')+esc(c.titulo)+'</div>';
-  if(c.tema) h += '<div class="tema"><b>Dossier:</b> '+esc(c.tema)+'</div>';
-  h += '<div class="meta">'
-     + (c.fecha_cierre?'<span>Cierra el '+esc(c.fecha_cierre)+'</span>':'')
-     + chips(c)+'</div>';
-  if(c.url) h += '<a href="'+esc(c.url)
-     + '" target="_blank" rel="noopener">Abrir convocatoria →</a>';
+  const d=dias(c.fecha_cierre), col=GUTTER[nivelUrg(d)], p=plazoPartes(d);
+  let h='<article class="tarj"><div class="gutter" style="background:'+col.bg
+    +';color:'+col.fg+'"><span class="gnum">'+esc(p[0])
+    +'</span><span class="gtxt">'+esc(p[1])+'</span></div><div class="cuerpo">';
+  h+='<div class="rev">'+esc(c.revista)+'</div>';
+  h+='<div class="tit">'+(c.es_dossier?'📑 ':'')+esc(c.titulo)+'</div>';
+  if(c.tema) h+='<div class="tema"><b>Dossier:</b> '+esc(c.tema)+'</div>';
+  h+='<div class="meta">'
+    +(c.fecha_cierre?'<span class="fecha">Cierra el '+esc(c.fecha_cierre)+'</span>':'')
+    +badges(c).map(chip).join('')+'<span class="pais">'+esc(c.pais)+'</span></div>';
+  if(c.url) h+='<a href="'+esc(c.url)
+    +'" target="_blank" rel="noopener">Abrir convocatoria →</a>';
   return h+'</div></article>';
 }
 
 function tarjetaPerm(r){
-  let frase = (r.evidencia_permanente||'').split('[fuente:')[0].trim();
-  let fuente = (r.evidencia_permanente||'').split('[fuente:')[1];
+  let frase=(r.evidencia_permanente||'').split('[fuente:')[0].trim();
+  let fuente=(r.evidencia_permanente||'').split('[fuente:')[1];
   fuente = fuente ? fuente.replace(']','').trim() : '';
-  let h = '<article class="tarj">'
-    + '<div class="gutter" style="background:var(--r3bg);color:var(--r3)">'
-    + '<span class="gnum">∞</span><span class="gtxt">abierta</span></div>'
-    + '<div class="cuerpo">';
-  h += '<div class="rev">'+esc(r.nombre)+'</div>';
-  h += '<div class="meta">'+chips(r)+'</div>';
-  if(frase) h += '<div class="cita">…'+esc(frase)+'…</div>';
+  let h='<article class="tarj"><div class="gutter" '
+    +'style="background:#dcfce7;color:#15803d">'
+    +'<span class="gnum">∞</span><span class="gtxt">abierta</span></div>'
+    +'<div class="cuerpo"><div class="rev">'+esc(r.nombre)+'</div>'
+    +'<div class="meta">'+badges(r).map(chip).join('')
+    +'<span class="pais">'+esc(r.pais)+'</span></div>';
+  if(frase) h+='<div class="cita">…'+esc(frase)+'…</div>';
   const ls=[];
   if(r.sitio_url) ls.push('<a href="'+esc(r.sitio_url)
     +'" target="_blank" rel="noopener">Ir a la revista →</a>');
   if(fuente && /^https?:/.test(fuente)) ls.push('<a href="'+esc(fuente)
     +'" target="_blank" rel="noopener">Ver la fuente →</a>');
-  if(ls.length) h += '<div>'+ls.join(' &nbsp;&nbsp; ')+'</div>';
+  if(ls.length) h+='<div style="display:flex;gap:16px;margin-top:9px;'
+    +'flex-wrap:wrap">'+ls.join('')+'</div>';
   return h+'</div></article>';
 }
 
-function pinta(){
-  const q = (document.getElementById('q').value||'').toLowerCase().trim();
-  const pais = document.getElementById('fPais').value;
-  const orden = document.getElementById('fOrden').value;
-  const secc = document.querySelector('nav button[aria-selected=true]').dataset.s;
+function tarjetaRev(r, manual){
+  const issn=[r.issn_impreso,r.issn_online].filter(Boolean).join(' / ')||'—';
+  let h='<div class="rcard"><div class="top"><div class="nombre">'
+    +esc(r.nombre)+'</div><div class="pais">'+esc(r.pais)+'</div></div>';
+  if(manual) h+='<div class="motivo">'+esc(r.estado_chequeo||'—')+'</div>';
+  else h+='<div style="display:flex;flex-wrap:wrap;gap:6px">'
+    +badges(r).map(chip).join('')+'</div>';
+  h+='<div class="inst">'+esc(r.institucion||'—')+'</div>';
+  if(!manual) h+='<div class="issn">ISSN '+esc(issn)+'</div>';
+  if(r.sitio_url) h+='<a href="'+esc(r.sitio_url)
+    +'" target="_blank" rel="noopener">Ir al sitio →</a>';
+  return h+'</div>';
+}
 
-  if(secc==='conv'){
-    let l = D.convocatorias.filter(c=>{
+function colorCobertura(l){
+  l=(l||'').toLowerCase();
+  if(l==='ok') return '#15803d';
+  if(l.includes('protegido')) return '#c2410c';
+  if(l.includes('no revisada')) return '#a16207';
+  if(l.includes('sin convocatorias')) return '#64748b';
+  if(l.includes('sin pagina')) return '#94a3b8';
+  if(l.includes('redirec')) return '#2563eb';
+  return '#b91c1c';
+}
+
+function pinta(){
+  const q=(document.getElementById('q').value||'').toLowerCase().trim();
+  const pais=document.getElementById('fPais').value;
+  const orden=document.getElementById('fOrden').value;
+  const cont=document.getElementById('lista');
+  const aviso=document.getElementById('urgente');
+
+  if(seccion==='conv'){
+    let l=D.convocatorias.filter(c=>{
       if(pais!=='*' && c.pais!==pais) return false;
       if(orden==='dossier' && !c.es_dossier) return false;
       if(orden==='fecha' && !c.fecha_cierre) return false;
-      if(orden==='urgente'){
-        const d=dias(c.fecha_cierre);
-        if(d===null || d<0 || d>7) return false;
-      }
+      if(orden==='urgente'){const d=dias(c.fecha_cierre);
+        if(d===null||d<0||d>7) return false;}
       if(!q) return true;
       return (c.revista+' '+c.titulo+' '+(c.tema||'')+' '+(c.descripcion||''))
-             .toLowerCase().includes(q);
-    });
-    l.sort((a,b)=>{
-      const da=dias(a.fecha_cierre), db=dias(b.fecha_cierre);
-      if(da===null&&db===null) return a.revista.localeCompare(b.revista);
-      if(da===null) return 1;
-      if(db===null) return -1;
-      return da-db;
+        .toLowerCase().includes(q);
     });
     document.getElementById('conteo').textContent =
       l.length+' convocatoria'+(l.length===1?'':'s');
 
-    // Aviso de urgentes: sin esto la urgencia solo se ve al scrollear.
-    const urg = l.filter(c=>{const d=dias(c.fecha_cierre);
-                            return d!==null && d>=0 && d<=7;}).length;
-    document.getElementById('urgente').innerHTML = urg
-      ? '⏰ <b>'+urg+'</b> convocatoria'+(urg===1?'':'s')
-        +' cierra'+(urg===1?'':'n')+' en 7 días o menos'
-      : '';
-    document.getElementById('urgente').classList.toggle('oculto', !urg);
+    const urg=l.filter(c=>{const d=dias(c.fecha_cierre);
+      return d!==null&&d>=0&&d<=7;}).length;
+    aviso.className='urgente'+(urg?'':' oculto');
+    aviso.innerHTML = urg ? '⏰ <b>'+urg+'</b> convocatoria'+(urg===1?'':'s')
+      +' cierra'+(urg===1?'':'n')+' en 7 días o menos' : '';
 
-    // Agrupadas por urgencia: 174 tarjetas en lista plana no se escanean.
-    let html = '';
+    let html='';
     GRUPOS.forEach(g=>{
-      const sub = l.filter(c=>nivelUrg(dias(c.fecha_cierre))===g.u);
+      const sub=l.filter(c=>nivelUrg(dias(c.fecha_cierre))===g.u);
       if(!sub.length) return;
-      html += '<div class="grupo"><h2>'+esc(g.t)+'</h2>'
-            + '<span class="n">'+sub.length+'</span></div>'
-            + sub.map(tarjetaConv).join('');
+      html+='<div class="grupo"><h2>'+esc(g.t)+'</h2><span class="n">'
+        +sub.length+'</span></div>'+sub.map(tarjetaConv).join('');
     });
-    document.getElementById('lista').innerHTML =
-      html || '<p>Sin resultados para ese filtro.</p>';
+    cont.innerHTML = html || '<p>Sin resultados para ese filtro.</p>';
 
-  } else if(secc==='perm'){
-    let l = D.revistas.filter(r=>r.recepcion_permanente===1)
-      .filter(r=>{
-        if(pais!=='*' && r.pais!==pais) return false;
-        if(!q) return true;
-        return (r.nombre+' '+(r.institucion||'')).toLowerCase().includes(q);
-      });
+  } else if(seccion==='perm'){
+    let l=D.revistas.filter(r=>r.recepcion_permanente===1).filter(r=>{
+      if(pais!=='*' && r.pais!==pais) return false;
+      if(!q) return true;
+      return (r.nombre+' '+(r.institucion||'')).toLowerCase().includes(q);
+    });
     document.getElementById('conteo').textContent =
       l.length+' revista'+(l.length===1?'':'s')+' con recepción permanente';
-    document.getElementById('urgente').classList.add('oculto');
-    document.getElementById('lista').innerHTML =
-      l.length ? l.map(tarjetaPerm).join('') : '<p>Sin resultados.</p>';
+    aviso.className='urgente oculto';
+    cont.innerHTML = l.length ? l.map(tarjetaPerm).join('')
+      : '<p>Sin resultados.</p>';
 
   } else {
-    let l = D.revistas.filter(r=>{
+    const manual = orden==='manual';
+    let l=D.revistas.filter(r=>{
       if(pais!=='*' && r.pais!==pais) return false;
       if(orden==='n1' && r.nivel_conicet!==1) return false;
       if(orden==='scopus' && !r.en_scopus) return false;
       if(orden==='scielo' && !r.en_scielo) return false;
       if(orden==='doaj' && !r.en_doaj) return false;
       if(orden==='perm' && r.recepcion_permanente!==1) return false;
-      if(orden==='manual' && r.revision_manual!==1) return false;
+      if(manual && r.revision_manual!==1) return false;
       if(!q) return true;
       return (r.nombre+' '+(r.institucion||'')+' '+(r.issn_impreso||'')+' '
-              +(r.issn_online||'')+' '+r.pais).toLowerCase().includes(q);
+        +(r.issn_online||'')+' '+r.pais).toLowerCase().includes(q);
     });
     document.getElementById('conteo').textContent =
-      l.length+' revista'+(l.length===1?'':'s');
-
-    // Al mirar las que requieren revisión manual, el motivo es lo que importa:
-    // se cambia la tabla por una centrada en eso.
-    const manual = orden==='manual';
-    document.getElementById('urgente').innerHTML = manual
+      l.length+' revista'+(l.length===1?'':'s')
+      + (l.length>revLimite ? ' · mostrando '+revLimite : '');
+    aviso.className='urgente man'+(manual?'':' oculto');
+    aviso.innerHTML = manual
       ? '🔍 Estas revistas <b>no se pudieron leer automáticamente</b>: su sitio '
-        +'bloquea la lectura o no respondió. Si tienen convocatoria abierta, '
-        +'no aparece en este panel — conviene mirarlas a mano.'
-      : '';
-    document.getElementById('urgente').classList.toggle('oculto', !manual);
-    document.getElementById('urgente').style.background = manual
-      ? 'var(--r2bg)' : '';
-    document.getElementById('urgente').style.borderColor = manual
-      ? 'var(--r2)' : '';
-    document.getElementById('urgente').style.color = manual ? 'var(--r2)' : '';
+        +'bloquea la lectura o no respondió. Si tienen convocatoria abierta, no '
+        +'aparece en este panel — conviene mirarlas a mano.' : '';
 
-    const filas = l.map(r=>{
-      const issn=[r.issn_impreso,r.issn_online].filter(Boolean).join(' / ');
-      const sc = r.en_scopus
-        ? (String(r.scopus_estado||'').toLowerCase()==='active'?'✅':'⏸️') : '';
-      const sitio = r.sitio_url
-        ? '<a href="'+esc(r.sitio_url)+'" target="_blank" rel="noopener">abrir</a>'
-        : '';
-      if(manual){
-        return '<tr><td>'+esc(r.nombre)+'</td><td>'+esc(r.pais)+'</td>'
-          +'<td>'+esc(r.estado_chequeo||'—')+'</td>'
-          +'<td>'+(r.nivel_conicet||'')+'</td>'
-          +'<td>'+esc(r.institucion||'—')+'</td><td>'+sitio+'</td></tr>';
-      }
-      return '<tr><td>'+esc(r.nombre)+'</td><td>'+esc(r.pais)+'</td>'
-        +'<td>'+(r.nivel_conicet||'')+'</td><td>'+sc+'</td>'
-        +'<td>'+(r.en_scielo?'✅':'')+'</td><td>'+(r.en_doaj?'✅':'')+'</td>'
-        +'<td>'+(r.recepcion_permanente===1?'♾️':'')+'</td>'
-        +'<td>'+esc(issn||'—')+'</td><td>'+esc(r.institucion||'—')+'</td>'
-        +'<td>'+sitio+'</td></tr>';
-    }).join('');
-
-    const cab = manual
-      ? '<th>Revista</th><th>País</th><th>Por qué no se pudo leer</th>'
-        +'<th>Nivel</th><th>Institución</th><th>Sitio</th>'
-      : '<th>Revista</th><th>País</th><th>Nivel</th><th>Scopus</th>'
-        +'<th>SciELO</th><th>DOAJ</th><th>Perm.</th><th>ISSN</th>'
-        +'<th>Institución</th><th>Sitio</th>';
-    const cols = manual ? 6 : 10;
-    document.getElementById('lista').innerHTML =
-      '<div class="tablaEnv"><table><thead><tr>'+cab+'</tr></thead><tbody>'
-      +(filas||'<tr><td colspan="'+cols+'">Sin resultados.</td></tr>')
-      +'</tbody></table></div>';
+    cont.innerHTML='<div class="revgrid">'
+      + (l.slice(0,revLimite).map(r=>tarjetaRev(r,manual)).join('')
+         || '<p>Sin resultados.</p>')
+      + '</div>'
+      + (l.length>revLimite
+         ? '<button class="masbtn" id="mas">Ver más ('
+           +(l.length-revLimite)+' restantes)</button>' : '');
+    const mas=document.getElementById('mas');
+    if(mas) mas.onclick=()=>{revLimite+=60;pinta();};
   }
 }
 
-function seccion(b, filtro){
-  document.querySelectorAll('nav button').forEach(x=>
+function cambiarSeccion(b, filtro){
+  document.querySelectorAll('.segs button').forEach(x=>
     x.setAttribute('aria-selected', x===b ? 'true':'false'));
-  const s = b.dataset.s;
-  const sel = document.getElementById('fOrden');
-  sel.innerHTML = s==='conv'
+  seccion=b.dataset.s;
+  revLimite=60;
+  const sel=document.getElementById('fOrden');
+  sel.innerHTML = seccion==='conv'
     ? '<option value="*">Todas</option>'
       +'<option value="urgente">Cierran en 7 días</option>'
       +'<option value="dossier">Solo dossiers</option>'
       +'<option value="fecha">Solo con fecha</option>'
-    : s==='rev'
+    : seccion==='rev'
     ? '<option value="*">Todas</option><option value="n1">Solo Nivel 1</option>'
       +'<option value="scopus">En Scopus</option>'
       +'<option value="scielo">En SciELO</option>'
@@ -571,68 +593,102 @@ function seccion(b, filtro){
       +'<option value="perm">Recepción permanente</option>'
       +'<option value="manual">Requieren revisión manual</option>'
     : '<option value="*">Todas</option>';
-  if(filtro && sel.querySelector('option[value="'+filtro+'"]')) sel.value = filtro;
-  sel.classList.toggle('oculto', s==='perm');
-  document.getElementById('cobertura').classList.toggle('oculto', s!=='rev');
+  if(filtro && sel.querySelector('option[value="'+filtro+'"]')) sel.value=filtro;
+  sel.classList.toggle('oculto', seccion==='perm');
+  document.getElementById('cobertura').classList.toggle('oculto', seccion!=='rev');
   pinta();
 }
 
-// Las métricas del encabezado llevan a la lista que representan, ya filtrada.
 function irA(sec, filtro){
-  const b = document.querySelector('nav button[data-s="'+sec+'"]');
+  const b=document.querySelector('.segs button[data-s="'+sec+'"]');
   if(!b) return;
-  document.getElementById('q').value = '';
-  document.getElementById('fPais').value = '*';
-  seccion(b, filtro);
-  document.querySelector('nav').scrollIntoView({behavior:'smooth', block:'start'});
+  document.getElementById('q').value='';
+  document.getElementById('fPais').value='*';
+  cambiarSeccion(b, filtro);
+  document.querySelector('nav').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function pintarCobertura(){
+  const e=D.estadisticas||{}, est=D.estados||[];
+  const total=est.reduce((a,b)=>a+b.n,0)||1;
+  document.getElementById('barra').innerHTML = est.map(x=>
+    '<div style="width:'+(x.n/total*100)+'%;background:'+colorCobertura(x.estado)
+    +'" title="'+esc(x.estado)+': '+x.n+'"></div>').join('');
+  document.getElementById('leyenda').innerHTML = est.map(x=>
+    '<span><span class="dot" style="background:'+colorCobertura(x.estado)
+    +'"></span>'+esc(x.estado)+' <b>'+x.n+'</b></span>').join('');
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
-  document.querySelectorAll('nav button').forEach(b=>
-    b.onclick=()=>seccion(b));
+  document.querySelectorAll('.segs button').forEach(b=>
+    b.onclick=()=>cambiarSeccion(b));
   document.querySelectorAll('.st, .stats2 button').forEach(b=>
     b.onclick=()=>irA(b.dataset.sec, b.dataset.f));
-
-  // El correo se arma en JS para que los recolectores automáticos de
-  // direcciones no lo levanten del HTML. Para quien lee, funciona igual.
-  const a = document.getElementById('contacto');
-  if(a){
-    const dir = ['aguirre.elias.gonzalo','gmail.com'].join('@');
-    a.href = 'mailto:'+dir+'?subject='
-           + encodeURIComponent('Panel de revistas academicas');
-    a.textContent = dir;
-  }
-  document.getElementById('q').oninput = pinta;
-  document.getElementById('fPais').onchange = pinta;
-  document.getElementById('fOrden').onchange = pinta;
-  document.getElementById('tema').onclick = ()=>{
+  document.getElementById('q').oninput=pinta;
+  document.getElementById('fPais').onchange=pinta;
+  document.getElementById('fOrden').onchange=pinta;
+  document.getElementById('tema').onclick=()=>{
     const r=document.documentElement;
     const oscuro = r.dataset.theme
       ? r.dataset.theme==='dark'
       : matchMedia('(prefers-color-scheme:dark)').matches;
     r.dataset.theme = oscuro ? 'light' : 'dark';
+    try{localStorage.setItem('tema', r.dataset.theme);}catch(e){}
   };
+  try{const t=localStorage.getItem('tema');
+      if(t) document.documentElement.dataset.theme=t;}catch(e){}
 
-  document.getElementById('conteo').textContent = 'Cargando datos…';
+  // El correo se arma en JS para que los recolectores de direcciones no lo
+  // levanten del HTML. Para quien lee, funciona igual.
+  const DIR=['aguirre.elias.gonzalo','gmail.com'].join('@');
+  const a=document.getElementById('contacto');
+  if(a){
+    a.href='mailto:'+DIR+'?subject='+encodeURIComponent('Panel de revistas');
+    a.textContent=DIR;
+  }
+
+  // Sin servicio de formularios configurado, la suscripción se resuelve
+  // abriendo un correo ya escrito. Funciona sin depender de terceros.
+  const f=document.getElementById('susForm');
+  if(f && f.dataset.modo==='correo'){
+    f.onsubmit=ev=>{
+      ev.preventDefault();
+      const n=document.getElementById('susNombre').value.trim();
+      const c=document.getElementById('susEmail').value.trim();
+      if(!n||!c) return;
+      location.href='mailto:'+DIR
+        +'?subject='+encodeURIComponent('Suscripcion al resumen semanal')
+        +'&body='+encodeURIComponent(
+          'Hola, quiero recibir el resumen semanal de convocatorias.\n\n'
+          +'Nombre: '+n+'\nCorreo: '+c+'\n\n'
+          +'(No hace falta que escribas nada más: con enviar este correo alcanza.)');
+      document.getElementById('susEstado').innerHTML =
+        '<p class="susOk">Se abrió tu programa de correo con el mensaje ya '
+        +'escrito. <b>Enviálo</b> y quedás suscripto. Si no se abrió, escribí a '
+        +DIR+'.</p>';
+    };
+  }
+
+  document.getElementById('conteo').textContent='Cargando datos…';
   fetch('datos.json')
     .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
     .then(j=>{
-      D = j;
+      D=j;
       const paises=[...new Set(D.revistas.map(r=>r.pais))].sort();
       document.getElementById('fPais').innerHTML =
         '<option value="*">Todos los países</option>'
         + paises.map(p=>'<option>'+esc(p)+'</option>').join('');
-      // La métrica de urgentes se calcula acá: depende de la fecha de hoy.
-      const u = D.convocatorias.filter(c=>{const d=dias(c.fecha_cierre);
-                                           return d!==null && d>=0 && d<=7;}).length;
-      document.getElementById('stUrg').textContent = u;
-      seccion(document.querySelector('nav button'));
+      const u=D.convocatorias.filter(c=>{const d=dias(c.fecha_cierre);
+        return d!==null&&d>=0&&d<=7;}).length;
+      document.getElementById('stUrg').textContent=u;
+      pintarCobertura();
+      cambiarSeccion(document.querySelector('.segs button'));
     })
     .catch(e=>{
-      document.getElementById('conteo').textContent = '';
+      document.getElementById('conteo').textContent='';
       document.getElementById('lista').innerHTML =
-        '<div class="aviso"><h3>No se pudieron cargar los datos</h3>'
-        +'<p>'+esc(e.message)+'</p><p>Si abriste este archivo con doble clic '
+        '<div class="aviso"><h3>No se pudieron cargar los datos</h3><p>'
+        +esc(e.message)+'</p><p>Si abriste este archivo con doble clic '
         +'(<code>file://</code>), el navegador bloquea la lectura de '
         +'<code>datos.json</code>. Vela publicada, o servila con '
         +'<code>python -m http.server</code>.</p></div>';
