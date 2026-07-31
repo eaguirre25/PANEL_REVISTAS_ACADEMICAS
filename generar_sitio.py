@@ -73,8 +73,17 @@ def reunir_datos():
                COALESCE(origen,'NBRA') AS origen, institucion,
                issn_impreso, issn_online, sitio_url, ficha_url,
                nivel_conicet, en_scopus, scopus_estado, en_scielo, en_doaj,
-               recepcion_permanente, evidencia_permanente
+               recepcion_permanente, evidencia_permanente, estado_chequeo
         FROM revistas ORDER BY nombre""")]
+
+    # Una revista "requiere revisión manual" si su sitio bloqueó la lectura
+    # automática o no respondió: su convocatoria, si la tiene, no está acá.
+    import re as _re
+    patron_manual = _re.compile(
+        r'anti-bot|login|inaccesible|redirec|^http \d|^error', _re.I)
+    for r in revistas:
+        r['revision_manual'] = 1 if patron_manual.search(
+            r['estado_chequeo'] or '') else 0
 
     convocatorias = [dict(f) for f in conn.execute("""
         SELECT c.titulo, c.descripcion, c.fecha_cierre, c.url,
@@ -103,6 +112,7 @@ def reunir_datos():
         'con_tema': sum(1 for c in convocatorias if c['tema']),
         'con_fecha': sum(1 for c in convocatorias if c['fecha_cierre']),
         'permanentes': sum(1 for r in revistas if r['recepcion_permanente'] == 1),
+        'revision_manual': sum(1 for r in revistas if r['revision_manual']),
         'nivel1': sum(1 for r in revistas if r['nivel_conicet'] == 1),
         'nivel2': sum(1 for r in revistas if r['nivel_conicet'] == 2),
         'scopus': sum(1 for r in revistas if r['en_scopus']),
@@ -168,18 +178,34 @@ h1{margin:0 0 6px;font-size:clamp(22px,3.4vw,32px);line-height:1.15;
 .enlaces a{color:var(--acento);text-decoration:none;font-size:14px;
   font-weight:550}
 .enlaces a:hover{text-decoration:underline}
-/* Cuatro métricas principales; el resto es secundario y no compite. */
+/* Métricas principales; el resto es secundario y no compite.
+   Todas son botones: llevan a la lista que contienen, ya filtrada. */
 .stats{display:grid;gap:9px;margin-top:20px;
-  grid-template-columns:repeat(4,1fr)}
-.st{background:var(--bg2);border-radius:10px;padding:11px 13px}
+  grid-template-columns:repeat(auto-fit,minmax(148px,1fr))}
+.st{background:var(--bg2);border-radius:10px;padding:11px 13px;border:0;
+  font-family:inherit;text-align:left;cursor:pointer;display:block;width:100%;
+  border:1.5px solid transparent;transition:border-color .12s,transform .12s}
+.st:hover{border-color:var(--acento);transform:translateY(-1px)}
+.st:focus-visible{outline:2px solid var(--acento);outline-offset:2px}
 .st b{display:block;font-size:24px;line-height:1.1;letter-spacing:-.03em;
-  font-variant-numeric:tabular-nums}
+  font-variant-numeric:tabular-nums;color:var(--fg)}
 .st span{color:var(--fg2);font-size:12.5px}
 .st.urg{background:var(--r0bg)} .st.urg b{color:var(--r0)}
 .st.urg span{color:var(--r0);opacity:.85}
+.st.urg:hover{border-color:var(--r0)}
+.st.man{background:var(--r2bg)} .st.man b{color:var(--r2)}
+.st.man span{color:var(--r2);opacity:.9}
+.st.man:hover{border-color:var(--r2)}
 .stats2{margin:11px 0 0;color:var(--fg2);font-size:13px;
-  display:flex;gap:7px;flex-wrap:wrap}
+  display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.stats2 button{background:none;border:0;font-family:inherit;font-size:13px;
+  color:var(--fg2);cursor:pointer;padding:3px 7px;border-radius:6px}
+.stats2 button:hover{background:var(--bg2);color:var(--fg)}
+.stats2 button:focus-visible{outline:2px solid var(--acento);outline-offset:1px}
 .stats2 b{color:var(--fg);font-variant-numeric:tabular-nums}
+.firma{margin:14px 0 0;color:var(--fg2);font-size:13px}
+.firma a{color:var(--acento);text-decoration:none}
+.firma a:hover{text-decoration:underline}
 
 /* ── navegación ───────────────────────────────────────────── */
 nav{position:sticky;top:0;z-index:20;background:var(--sup);
@@ -424,6 +450,10 @@ function pinta(){
       if(pais!=='*' && c.pais!==pais) return false;
       if(orden==='dossier' && !c.es_dossier) return false;
       if(orden==='fecha' && !c.fecha_cierre) return false;
+      if(orden==='urgente'){
+        const d=dias(c.fecha_cierre);
+        if(d===null || d<0 || d>7) return false;
+      }
       if(!q) return true;
       return (c.revista+' '+c.titulo+' '+(c.tema||'')+' '+(c.descripcion||''))
              .toLowerCase().includes(q);
@@ -478,57 +508,115 @@ function pinta(){
       if(orden==='n1' && r.nivel_conicet!==1) return false;
       if(orden==='scopus' && !r.en_scopus) return false;
       if(orden==='scielo' && !r.en_scielo) return false;
+      if(orden==='doaj' && !r.en_doaj) return false;
       if(orden==='perm' && r.recepcion_permanente!==1) return false;
+      if(orden==='manual' && r.revision_manual!==1) return false;
       if(!q) return true;
       return (r.nombre+' '+(r.institucion||'')+' '+(r.issn_impreso||'')+' '
               +(r.issn_online||'')+' '+r.pais).toLowerCase().includes(q);
     });
     document.getElementById('conteo').textContent =
       l.length+' revista'+(l.length===1?'':'s');
-    document.getElementById('urgente').classList.add('oculto');
+
+    // Al mirar las que requieren revisión manual, el motivo es lo que importa:
+    // se cambia la tabla por una centrada en eso.
+    const manual = orden==='manual';
+    document.getElementById('urgente').innerHTML = manual
+      ? '🔍 Estas revistas <b>no se pudieron leer automáticamente</b>: su sitio '
+        +'bloquea la lectura o no respondió. Si tienen convocatoria abierta, '
+        +'no aparece en este panel — conviene mirarlas a mano.'
+      : '';
+    document.getElementById('urgente').classList.toggle('oculto', !manual);
+    document.getElementById('urgente').style.background = manual
+      ? 'var(--r2bg)' : '';
+    document.getElementById('urgente').style.borderColor = manual
+      ? 'var(--r2)' : '';
+    document.getElementById('urgente').style.color = manual ? 'var(--r2)' : '';
+
     const filas = l.map(r=>{
       const issn=[r.issn_impreso,r.issn_online].filter(Boolean).join(' / ');
       const sc = r.en_scopus
         ? (String(r.scopus_estado||'').toLowerCase()==='active'?'✅':'⏸️') : '';
+      const sitio = r.sitio_url
+        ? '<a href="'+esc(r.sitio_url)+'" target="_blank" rel="noopener">abrir</a>'
+        : '';
+      if(manual){
+        return '<tr><td>'+esc(r.nombre)+'</td><td>'+esc(r.pais)+'</td>'
+          +'<td>'+esc(r.estado_chequeo||'—')+'</td>'
+          +'<td>'+(r.nivel_conicet||'')+'</td>'
+          +'<td>'+esc(r.institucion||'—')+'</td><td>'+sitio+'</td></tr>';
+      }
       return '<tr><td>'+esc(r.nombre)+'</td><td>'+esc(r.pais)+'</td>'
         +'<td>'+(r.nivel_conicet||'')+'</td><td>'+sc+'</td>'
         +'<td>'+(r.en_scielo?'✅':'')+'</td><td>'+(r.en_doaj?'✅':'')+'</td>'
         +'<td>'+(r.recepcion_permanente===1?'♾️':'')+'</td>'
         +'<td>'+esc(issn||'—')+'</td><td>'+esc(r.institucion||'—')+'</td>'
-        +'<td>'+(r.sitio_url?'<a href="'+esc(r.sitio_url)
-            +'" target="_blank" rel="noopener">abrir</a>':'')+'</td></tr>';
+        +'<td>'+sitio+'</td></tr>';
     }).join('');
+
+    const cab = manual
+      ? '<th>Revista</th><th>País</th><th>Por qué no se pudo leer</th>'
+        +'<th>Nivel</th><th>Institución</th><th>Sitio</th>'
+      : '<th>Revista</th><th>País</th><th>Nivel</th><th>Scopus</th>'
+        +'<th>SciELO</th><th>DOAJ</th><th>Perm.</th><th>ISSN</th>'
+        +'<th>Institución</th><th>Sitio</th>';
+    const cols = manual ? 6 : 10;
     document.getElementById('lista').innerHTML =
-      '<div class="tablaEnv"><table><thead><tr>'
-      +'<th>Revista</th><th>País</th><th>Nivel</th><th>Scopus</th>'
-      +'<th>SciELO</th><th>DOAJ</th><th>Perm.</th><th>ISSN</th>'
-      +'<th>Institución</th><th>Sitio</th></tr></thead><tbody>'
-      +(filas||'<tr><td colspan="10">Sin resultados.</td></tr>')
+      '<div class="tablaEnv"><table><thead><tr>'+cab+'</tr></thead><tbody>'
+      +(filas||'<tr><td colspan="'+cols+'">Sin resultados.</td></tr>')
       +'</tbody></table></div>';
   }
 }
 
-function seccion(b){
+function seccion(b, filtro){
   document.querySelectorAll('nav button').forEach(x=>
     x.setAttribute('aria-selected', x===b ? 'true':'false'));
   const s = b.dataset.s;
   const sel = document.getElementById('fOrden');
   sel.innerHTML = s==='conv'
-    ? '<option value="*">Todas</option><option value="dossier">Solo dossiers</option>'
+    ? '<option value="*">Todas</option>'
+      +'<option value="urgente">Cierran en 7 días</option>'
+      +'<option value="dossier">Solo dossiers</option>'
       +'<option value="fecha">Solo con fecha</option>'
     : s==='rev'
     ? '<option value="*">Todas</option><option value="n1">Solo Nivel 1</option>'
-      +'<option value="scopus">En Scopus</option><option value="scielo">En SciELO</option>'
+      +'<option value="scopus">En Scopus</option>'
+      +'<option value="scielo">En SciELO</option>'
+      +'<option value="doaj">En DOAJ</option>'
       +'<option value="perm">Recepción permanente</option>'
+      +'<option value="manual">Requieren revisión manual</option>'
     : '<option value="*">Todas</option>';
+  if(filtro && sel.querySelector('option[value="'+filtro+'"]')) sel.value = filtro;
   sel.classList.toggle('oculto', s==='perm');
   document.getElementById('cobertura').classList.toggle('oculto', s!=='rev');
   pinta();
 }
 
+// Las métricas del encabezado llevan a la lista que representan, ya filtrada.
+function irA(sec, filtro){
+  const b = document.querySelector('nav button[data-s="'+sec+'"]');
+  if(!b) return;
+  document.getElementById('q').value = '';
+  document.getElementById('fPais').value = '*';
+  seccion(b, filtro);
+  document.querySelector('nav').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
 document.addEventListener('DOMContentLoaded',()=>{
   document.querySelectorAll('nav button').forEach(b=>
     b.onclick=()=>seccion(b));
+  document.querySelectorAll('.st, .stats2 button').forEach(b=>
+    b.onclick=()=>irA(b.dataset.sec, b.dataset.f));
+
+  // El correo se arma en JS para que los recolectores automáticos de
+  // direcciones no lo levanten del HTML. Para quien lee, funciona igual.
+  const a = document.getElementById('contacto');
+  if(a){
+    const dir = ['aguirre.elias.gonzalo','gmail.com'].join('@');
+    a.href = 'mailto:'+dir+'?subject='
+           + encodeURIComponent('Panel de revistas academicas');
+    a.textContent = dir;
+  }
   document.getElementById('q').oninput = pinta;
   document.getElementById('fPais').onchange = pinta;
   document.getElementById('fOrden').onchange = pinta;
@@ -590,23 +678,33 @@ def construir_html(revistas, convocatorias, estados, stats):
       <h1>Panel de revistas académicas iberoamericanas</h1>
       <p class="sub">Convocatorias y llamados a dossier abiertos en
         <b>{stats['revistas']}</b> revistas de ciencias sociales y humanidades
-        de <b>{stats['paises']}</b> países.</p>
+        de <b>{stats['paises']}</b> países. Los plazos se calculan con la fecha
+        de hoy.</p>
+      <p class="firma">Desarrollado por <b>Elías Aguirre</b>. Comentarios,
+        feedback y consultas a <a id="contacto" href="#">(escribir)</a>.</p>
     </div>
     <button id="tema" title="Cambiar entre tema claro y oscuro"
             aria-label="Cambiar tema">◑</button>
   </div>
   <div class="stats">
-    <div class="st urg"><b id="stUrg">–</b><span>cierran en 7 días</span></div>
-    <div class="st"><b>{stats['convocatorias']}</b><span>convocatorias</span></div>
-    <div class="st"><b>{stats['permanentes']}</b><span>abiertas todo el año</span></div>
-    <div class="st"><b>{stats['revistas']}</b><span>revistas</span></div>
+    <button class="st urg" data-sec="conv" data-f="urgente">
+      <b id="stUrg">–</b><span>cierran en 7 días</span></button>
+    <button class="st" data-sec="conv" data-f="*">
+      <b>{stats['convocatorias']}</b><span>convocatorias</span></button>
+    <button class="st" data-sec="conv" data-f="dossier">
+      <b>{stats['dossiers']}</b><span>dossiers</span></button>
+    <button class="st" data-sec="perm" data-f="*">
+      <b>{stats['permanentes']}</b><span>abiertas todo el año</span></button>
+    <button class="st" data-sec="rev" data-f="*">
+      <b>{stats['revistas']}</b><span>revistas</span></button>
+    <button class="st man" data-sec="rev" data-f="manual">
+      <b>{stats['revision_manual']}</b><span>requieren revisión manual</span></button>
   </div>
   <p class="stats2">
-    <span><b>{stats['dossiers']}</b> dossiers</span> ·
-    <span><b>{stats['nivel1']}</b> Nivel 1</span> ·
-    <span><b>{stats['scopus']}</b> en Scopus</span> ·
-    <span><b>{stats['scielo']}</b> en SciELO</span> ·
-    <span><b>{stats['doaj']}</b> en DOAJ</span>
+    <button data-sec="rev" data-f="n1"><b>{stats['nivel1']}</b> Nivel 1</button>·
+    <button data-sec="rev" data-f="scopus"><b>{stats['scopus']}</b> en Scopus</button>·
+    <button data-sec="rev" data-f="scielo"><b>{stats['scielo']}</b> en SciELO</button>·
+    <button data-sec="rev" data-f="doaj"><b>{stats['doaj']}</b> en DOAJ</button>
   </p>
   <p class="enlaces">
     <a href="#boletin">Recibir el resumen semanal →</a>
