@@ -1,0 +1,10 @@
+{
+  "_instrucciones": [
+    "Copiá este archivo como 'config_local.json' (sin '.ejemplo').",
+    "El correo es OPCIONAL pero conviene declararlo: OpenAlex y Crossref dan",
+    "límites de uso más holgados a los clientes que se identifican.",
+    "Este archivo está en .gitignore para que tu correo no se publique.",
+    "También se puede usar la variable de entorno PANEL_REVISTAS_EMAIL."
+  ],
+  "email_contacto": "tu-correo@ejemplo.com"
+}

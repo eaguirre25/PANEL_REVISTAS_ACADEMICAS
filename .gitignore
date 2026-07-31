@@ -1,0 +1,36 @@
+# ─── Credenciales y datos personales: NUNCA publicar ───
+config_email.json
+config_local.json
+
+# ─── Base de datos: contiene los correos de los suscriptores ───
+*.db
+revistas.db
+
+# ─── Datos descargados de terceros ───
+# scopus_source_list.xlsx es la lista de fuentes de Elsevier (~26 MB).
+# No se redistribuye: indizacion.py la descarga sola en la primera ejecución.
+datos/
+
+# ─── Salidas generadas ───
+informes/
+*.log
+ejecutar-actualizacion.bat
+ejecutar-resolver-issn.bat
+
+# ─── Python ───
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+
+# ─── Editores / sistema ───
+.streamlit/
+.env
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
