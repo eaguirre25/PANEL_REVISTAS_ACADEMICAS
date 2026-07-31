@@ -87,6 +87,60 @@ def _color(d):
     return "#16a34a"
 
 
+def _nombre_pila(nombre):
+    """Primer nombre, para un saludo que no suene a formulario."""
+    return (nombre or '').strip().split(' ')[0] if nombre else ''
+
+
+def enlace_baja(email, remitente):
+    """
+    mailto de baja, con asunto y cuerpo ya escritos.
+
+    Un sitio estático no puede procesar una baja por su cuenta, así que se
+    resuelve por correo: llega un mensaje con asunto BAJA y la dirección, y
+    se quita desde la pestaña Boletín de la app.
+    """
+    from urllib.parse import quote
+    asunto = quote(f"BAJA - {email}")
+    cuerpo = quote("Quiero dejar de recibir el resumen semanal de "
+                   "convocatorias.\n\nNo hace falta que escribas nada más: "
+                   "con enviar este correo alcanza.")
+    return f"mailto:{remitente}?subject={asunto}&body={cuerpo}"
+
+
+def _envoltorio(saludo, cuerpo, email, remitente, pie_extra=""):
+    """Estructura común de los correos: saludo breve, contenido, y baja."""
+    baja = enlace_baja(email, remitente)
+    return f'''<div style="font-family:system-ui,-apple-system,'Segoe UI',
+      Roboto,sans-serif;max-width:660px;margin:0 auto;color:#16181d;
+      line-height:1.55;">
+  <div style="border-bottom:2px solid #2450c5;padding-bottom:12px;
+       margin-bottom:22px;">
+    <div style="font-size:13px;color:#5c6572;letter-spacing:.04em;
+         text-transform:uppercase;">Panel de revistas académicas</div>
+    <div style="font-size:13px;color:#5c6572;">Ciencias sociales y
+      humanidades · Iberoamérica</div>
+  </div>
+
+  {saludo}
+
+  {cuerpo}
+
+  <hr style="margin-top:34px;border:none;border-top:1px solid #e2e6ec;">
+  <p style="font-size:12.5px;color:#8a93a1;margin:14px 0 0;">
+    {pie_extra}
+    Recibís este correo porque te suscribiste al resumen de convocatorias.
+    Podés <a href="{baja}" style="color:#5c6572;">darte de baja acá</a>
+    &mdash; se abre un correo ya escrito, solo tenés que enviarlo.
+  </p>
+  <p style="font-size:12.5px;color:#8a93a1;margin:8px 0 0;">
+    Desarrollado por Elías Aguirre ·
+    <a href="https://eaguirre25.github.io/PANEL_REVISTAS_ACADEMICAS/"
+       style="color:#2450c5;">ver el panel completo</a>
+  </p>
+</div>'''
+
+
 def _tarjeta(c, d=None):
     color = _color(d)
     etiqueta = (f"{d} día{'s' if d != 1 else ''}" if d is not None
@@ -123,52 +177,102 @@ def _tarjeta(c, d=None):
     return "".join(partes)
 
 
-def construir_html(nombre_destinatario=None):
-    por_vencer, nuevas, permanentes = reunir()
-    hoy = date.today().isoformat()
-
-    saludo = (f"<p>Hola {escape(nombre_destinatario)},</p>"
-              if nombre_destinatario else "")
+def construir_bienvenida(nombre, email, remitente):
+    """Correo de confirmación, al darse de alta."""
+    por_vencer, _, permanentes = reunir()
+    pila = _nombre_pila(nombre)
     urgentes = sum(1 for d, _ in por_vencer if d <= 7)
 
-    h = [f'''<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;
-              max-width:720px;margin:0 auto;color:#111;">
-      <h2 style="margin-bottom:4px;">Revistas iberoamericanas en ciencias
-        sociales y humanidades</h2>
-      <p style="color:#666;margin-top:0;">Resumen de convocatorias · {hoy}</p>
-      {saludo}
-      <p><strong>{len(por_vencer)}</strong> convocatorias cierran en los próximos
-      {DIAS_AVISO} días''' + (f' (<strong style="color:#dc2626;">{urgentes}</strong> '
-                              f'en una semana o menos)' if urgentes else '') +
-        f'''. Se detectaron <strong>{len(nuevas)}</strong> nuevas en los últimos
-      {DIAS_NUEVAS} días. Además hay <strong>{permanentes}</strong> revistas que
-      reciben artículos todo el año.</p>''']
+    saludo = (f'<p style="font-size:17px;margin:0 0 6px;">'
+              f'Hola{" " + escape(pila) if pila else ""},</p>'
+              '<p style="margin:0 0 22px;color:#3d4552;">'
+              'Quedaste suscripto al resumen semanal de convocatorias. '
+              'Desde ahora te llega <b>todos los lunes</b>.</p>')
 
-    h.append('<h3 style="margin-top:26px;">⏱️ Próximas a vencer</h3>')
+    cuerpo = f'''
+  <div style="background:#f2f4f7;border-radius:10px;padding:16px 19px;
+       margin-bottom:20px;">
+    <p style="margin:0 0 10px;font-weight:600;">Qué vas a recibir</p>
+    <ul style="margin:0;padding-left:19px;color:#3d4552;">
+      <li style="margin-bottom:5px;">Las convocatorias que cierran en los
+        próximos {DIAS_AVISO} días, ordenadas por urgencia.</li>
+      <li style="margin-bottom:5px;">Las nuevas que aparecieron esa semana.</li>
+      <li style="margin-bottom:5px;">El tema de cada dossier, cuando el aviso
+        permite identificarlo.</li>
+      <li>Las revistas que reciben artículos todo el año.</li>
+    </ul>
+  </div>
+
+  <p style="margin:0 0 8px;">Ahora mismo hay
+    <b>{len(por_vencer)}</b> convocatorias con el plazo abierto'''\
+    + (f', de las cuales <b style="color:#dc2626;">{urgentes}</b> cierran '
+       'esta semana' if urgentes else '') + f''', y <b>{permanentes}</b>
+    revistas que reciben artículos todo el año.</p>
+
+  <p style="margin:18px 0 0;">
+    <a href="https://eaguirre25.github.io/PANEL_REVISTAS_ACADEMICAS/"
+       style="display:inline-block;background:#2450c5;color:#fff;
+       text-decoration:none;padding:11px 20px;border-radius:8px;
+       font-weight:600;">Ver el panel completo</a>
+  </p>
+
+  <p style="margin:22px 0 0;color:#5c6572;font-size:14px;">
+    Un aviso honesto: la detección no es exhaustiva. Hay revistas cuyo sitio
+    bloquea la lectura automática y muchas convocatorias no publican su fecha
+    de cierre en un formato legible. Verificá siempre en el enlace antes de
+    preparar un envío.</p>'''
+
+    return _envoltorio(saludo, cuerpo, email, remitente)
+
+
+def construir_html(nombre_destinatario=None, email='', remitente=''):
+    """Correo del resumen semanal."""
+    por_vencer, nuevas, permanentes = reunir()
+    pila = _nombre_pila(nombre_destinatario)
+    urgentes = sum(1 for d, _ in por_vencer if d <= 7)
+    hoy = date.today().strftime('%d/%m/%Y')
+
+    saludo = (f'<p style="font-size:17px;margin:0 0 6px;">'
+              f'Hola{" " + escape(pila) if pila else ""},</p>'
+              f'<p style="margin:0 0 20px;color:#3d4552;">'
+              f'Esto es lo que se movió esta semana ({hoy}).</p>')
+
+    resumen = f'''<p style="margin:0 0 6px;">
+      <b>{len(por_vencer)}</b> convocatorias cierran en los próximos
+      {DIAS_AVISO} días'''\
+      + (f' &mdash; <b style="color:#dc2626;">{urgentes}</b> en una semana '
+         'o menos' if urgentes else '') + f'''.
+      Aparecieron <b>{len(nuevas)}</b> nuevas en los últimos {DIAS_NUEVAS} días.
+      Además hay <b>{permanentes}</b> revistas que reciben todo el año.</p>'''
+
+    c = [resumen]
+
+    c.append('<h3 style="margin:30px 0 4px;font-size:15px;'
+             'text-transform:uppercase;letter-spacing:.05em;color:#5c6572;">'
+             'Próximas a vencer</h3>')
     if por_vencer:
-        for d, c in por_vencer:
-            h.append(_tarjeta(c, d))
+        for d, conv in por_vencer:
+            c.append(_tarjeta(conv, d))
     else:
-        h.append('<p style="color:#666;">Ninguna con fecha declarada en '
+        c.append('<p style="color:#5c6572;">Ninguna con fecha declarada en '
                  'esta ventana.</p>')
 
-    h.append('<h3 style="margin-top:26px;">🆕 Nuevas desde la última '
-             'actualización</h3>')
+    c.append('<h3 style="margin:30px 0 4px;font-size:15px;'
+             'text-transform:uppercase;letter-spacing:.05em;color:#5c6572;">'
+             'Nuevas esta semana</h3>')
     if nuevas:
-        for c in nuevas:
-            h.append(_tarjeta(c, _dias(c['fecha_cierre'])))
+        for conv in nuevas:
+            c.append(_tarjeta(conv, _dias(conv['fecha_cierre'])))
     else:
-        h.append('<p style="color:#666;">No se detectaron convocatorias nuevas.</p>')
+        c.append('<p style="color:#5c6572;">No se detectaron convocatorias '
+                 'nuevas.</p>')
 
-    h.append(f'''<hr style="margin-top:28px;border:none;border-top:1px solid #ddd;">
-      <p style="font-size:12px;color:#888;">
-      Generado automáticamente por el tracker local de revistas. La detección no
-      es exhaustiva: hay revistas cuyo sitio bloquea la lectura automática, y
-      muchas convocatorias no declaran su fecha de cierre en un formato legible.
-      Verificá siempre en el enlace antes de preparar un envío.<br>
-      Para darte de baja, abrí la app y quitá tu correo en la pestaña Boletín.
-      </p></div>''')
-    return "\n".join(h)
+    pie = ('La detección no es exhaustiva: hay revistas cuyo sitio bloquea la '
+           'lectura automática y muchas convocatorias no declaran su fecha de '
+           'cierre en un formato legible. Verificá siempre en el enlace antes '
+           'de preparar un envío.<br><br>')
+
+    return _envoltorio(saludo, "\n".join(c), email, remitente, pie_extra=pie)
 
 
 def guardar_informe():
@@ -176,9 +280,11 @@ def guardar_informe():
     os.makedirs(DIR_INFORMES, exist_ok=True)
     ruta = os.path.join(DIR_INFORMES,
                         f"convocatorias-{date.today().isoformat()}.html")
+    cfg = cargar_config() or {}
     with open(ruta, 'w', encoding='utf-8') as f:
         f.write("<!doctype html><meta charset='utf-8'>"
-                "<title>Convocatorias</title>" + construir_html())
+                "<title>Convocatorias</title>"
+                + construir_html(remitente=cfg.get('remitente', '')))
     return ruta
 
 
@@ -197,15 +303,19 @@ def cargar_config():
     return cfg
 
 
-def enviar(cfg, destinatario, nombre, html):
+def enviar(cfg, destinatario, asunto, html, texto_plano):
     msg = EmailMessage()
-    msg['Subject'] = (f"Convocatorias a dossier · "
-                      f"{date.today().strftime('%d/%m/%Y')}")
-    msg['From'] = cfg['remitente']
+    msg['Subject'] = asunto
+    msg['From'] = f"Panel de revistas académicas <{cfg['remitente']}>"
     msg['To'] = destinatario
-    msg.set_content(
-        "Este resumen está en formato HTML. Si no lo ves bien, abrí el archivo "
-        f"generado en la carpeta informes/ del tracker.")
+
+    # Cabecera estándar: los clientes de correo muestran su propio botón de
+    # baja a partir de esto, además del enlace visible en el cuerpo.
+    from urllib.parse import quote
+    msg['List-Unsubscribe'] = (
+        f"<mailto:{cfg['remitente']}?subject={quote('BAJA - ' + destinatario)}>")
+
+    msg.set_content(texto_plano)
     msg.add_alternative(html, subtype='html')
 
     if int(cfg['puerto']) == 465:
@@ -217,6 +327,29 @@ def enviar(cfg, destinatario, nombre, html):
             s.starttls()
             s.login(cfg['usuario'], cfg['password'])
             s.send_message(msg)
+
+
+def enviar_bienvenida(nombre, email):
+    """Manda la confirmación de alta. Devuelve (enviado, mensaje)."""
+    cfg = cargar_config()
+    if not cfg:
+        return False, "El correo no está configurado; no se envió confirmación."
+    try:
+        enviar(cfg, email,
+               "Ya estás suscripto · Panel de revistas académicas",
+               construir_bienvenida(nombre, email, cfg['remitente']),
+               f"Hola {_nombre_pila(nombre)},\n\n"
+               "Quedaste suscripto al resumen semanal de convocatorias a "
+               "dossier. Te llega todos los lunes.\n\n"
+               "Panel completo: "
+               "https://eaguirre25.github.io/PANEL_REVISTAS_ACADEMICAS/\n\n"
+               f"Para darte de baja, respondé este correo con el asunto "
+               f"BAJA - {email}")
+        marcar_envio(email)
+        return True, "Se envió el correo de bienvenida."
+    except Exception as e:
+        logger.warning("Falló la bienvenida a %s: %s", email, e)
+        return False, f"No se pudo enviar la confirmación: {type(e).__name__}"
 
 
 def enviar_boletin():
@@ -242,7 +375,14 @@ def enviar_boletin():
     enviados, errores = 0, []
     for s in suscriptores:
         try:
-            enviar(cfg, s['email'], s['nombre'], construir_html(s['nombre']))
+            enviar(cfg, s['email'],
+                   f"Convocatorias a dossier · {date.today().strftime('%d/%m/%Y')}",
+                   construir_html(s['nombre'], s['email'], cfg['remitente']),
+                   f"Hola {_nombre_pila(s['nombre'])},\n\n"
+                   "Este resumen se ve mejor en HTML. Panel completo:\n"
+                   "https://eaguirre25.github.io/PANEL_REVISTAS_ACADEMICAS/\n\n"
+                   f"Para darte de baja, respondé con el asunto "
+                   f"BAJA - {s['email']}")
             marcar_envio(s['email'])
             enviados += 1
         except Exception as e:

@@ -451,7 +451,14 @@ with tab_bol:
                 st.error("Ese correo no parece válido.")
             else:
                 ok, msg = agregar_suscriptor(nombre_s, email_s)
-                (st.success if ok else st.error)(msg)
+                if ok:
+                    from boletin import enviar_bienvenida
+                    enviado, detalle = enviar_bienvenida(nombre_s, email_s)
+                    st.success(msg + ("  " + detalle if enviado else ""))
+                    if not enviado:
+                        st.info(detalle)
+                else:
+                    st.error(msg)
                 st.rerun()
 
         suscriptores = obtener_suscriptores()
