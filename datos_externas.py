@@ -454,5 +454,40 @@ REVISTAS = [
      "Universidad Nacional de Jujuy",
      "https://revistas.fhycs.unju.edu.ar/revistacuadernos/index.php/cuadernos",
      "Latindex / DOAJ / Núcleo Básico"),
+
+    # ── incorporadas a partir de convocatorias relevadas (agosto 2026) ──
+    # El país es el declarado por la fuente; la resolución contra DOAJ y
+    # Scopus queda registrada en el campo `resolucion` de cada revista, para
+    # poder verificar que se emparejó con la publicación correcta.
+    ("Revista Significantes", "Argentina", "", "", "no declarada"),
+    ("RICAP. Revista Integradora de la Comunidad Académica en Psicología",
+     "México", "", "", "no declarada"),
+    ("Argonautas. Revista de Educación y Ciencias Sociales", "Argentina",
+     "Universidad Nacional de San Luis", "", "no declarada"),
+    ("Historia y Región", "Argentina", "", "", "no declarada"),
+    ("Dearq", "Colombia", "Universidad de los Andes", "", "Scopus / DOAJ"),
+    ("Disertaciones", "Colombia", "Universidad del Rosario", "", "Scopus / DOAJ"),
+    ("Dixit", "Uruguay", "Universidad Católica del Uruguay", "", "SciELO / DOAJ"),
+    ("Encuentros Uruguayos", "Uruguay", "Universidad de la República",
+     "", "Latindex / DOAJ"),
+    ("Acervo", "Brasil", "Arquivo Nacional", "", "SciELO / DOAJ"),
+    ("Desafíos: Economía y Empresa", "Perú", "", "", "no declarada"),
+    ("Revista Perspectivas (UNIMINUTO)", "Colombia",
+     "Corporación Universitaria Minuto de Dios", "", "no declarada"),
+    ("Cotopaxi Tech", "Ecuador", "", "", "no declarada"),
+    ("Millcayac. Revista Digital de Ciencias Sociales", "Argentina",
+     "Universidad Nacional de Cuyo", "", "Latindex / DOAJ"),
+    ("Cuadernos del Sur. Letras", "Argentina", "Universidad Nacional del Sur",
+     "", "Latindex / Núcleo Básico"),
+    ("Liberabit. Revista Peruana de Psicología", "Perú",
+     "Universidad de San Martín de Porres", "", "Scopus / SciELO / DOAJ"),
+    ("Jangwa Pana", "Colombia", "Universidad del Magdalena", "", "DOAJ / Latindex"),
+    ("Cadernos de Filosofia Alemã: Crítica e Modernidade", "Brasil",
+     "Universidade de São Paulo", "", "DOAJ / Latindex"),
+    ("[re]Design", "Argentina", "", "", "no declarada"),
+    ("Claves. Revista de Historia", "Uruguay", "Universidad de la República",
+     "", "SciELO / DOAJ / Latindex"),
+    ("Contribuciones desde Coatepec", "México",
+     "Universidad Autónoma del Estado de México", "", "Redalyc / Latindex"),
 ]
 
