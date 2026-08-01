@@ -968,8 +968,8 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
   </div>
 
   <p class="rotulo">Revistas en el catálogo · <b>{stats['revistas']}</b>
-    <span class="acota">las cuatro cifras siguientes son excluyentes y
-      suman ese total</span></p>
+    <span class="acota">las cinco cifras siguientes son excluyentes entre sí
+      y suman ese total</span></p>
   <div class="stats">
     <button class="st ok" data-sec="rev" data-f="conconv">
       <b>{stats['rev_con_conv']}</b><span>con convocatoria detectada</span></button>
