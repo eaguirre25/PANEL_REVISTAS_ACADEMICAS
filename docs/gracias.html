@@ -192,6 +192,16 @@ main{padding:24px 0 80px}
   padding:3px 10px;font-size:11.5px;font-weight:650}
 .cita{font-style:italic;color:var(--fg3);font-size:14px;line-height:1.5;
   border-left:3px solid #15803d;padding-left:12px;margin-top:10px}
+.acciones{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.acciones>a{margin-top:0}
+/* Agendar es secundario: no debe competir con el enlace a la convocatoria,
+   que es lo que la persona vino a abrir. */
+a.cal{display:inline-flex;align-items:center;gap:6px;font-size:13px;
+  color:var(--fg2)!important;border:1px solid var(--borde2);border-radius:9px;
+  padding:6px 12px;background:var(--sup2)}
+a.cal:hover{color:var(--a1)!important;border-color:var(--a1);
+  text-decoration:none!important}
+a.cal svg{flex:none}
 /* Lo que sigue vigente pese al cierre: reapertura o recepción abierta. */
 .reabre{margin-top:10px;padding:10px 13px;background:rgba(21,128,61,.10);
   border-radius:9px;font-size:14px;line-height:1.5}

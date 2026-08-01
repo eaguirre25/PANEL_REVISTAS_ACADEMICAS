@@ -194,6 +194,16 @@ main{padding:24px 0 80px}
   padding:3px 10px;font-size:11.5px;font-weight:650}
 .cita{font-style:italic;color:var(--fg3);font-size:14px;line-height:1.5;
   border-left:3px solid #15803d;padding-left:12px;margin-top:10px}
+.acciones{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.acciones>a{margin-top:0}
+/* Agendar es secundario: no debe competir con el enlace a la convocatoria,
+   que es lo que la persona vino a abrir. */
+a.cal{display:inline-flex;align-items:center;gap:6px;font-size:13px;
+  color:var(--fg2)!important;border:1px solid var(--borde2);border-radius:9px;
+  padding:6px 12px;background:var(--sup2)}
+a.cal:hover{color:var(--a1)!important;border-color:var(--a1);
+  text-decoration:none!important}
+a.cal svg{flex:none}
 /* Lo que sigue vigente pese al cierre: reapertura o recepción abierta. */
 .reabre{margin-top:10px;padding:10px 13px;background:rgba(21,128,61,.10);
   border-radius:9px;font-size:14px;line-height:1.5}
@@ -287,7 +297,7 @@ footer a{color:var(--a1)}
   <div class="hcab">
     <div>
       <p class="sello"><span class="punto"></span>
-        Última actualización automática: <b>01/08/2026 14:08</b></p>
+        Última actualización automática: <b>01/08/2026 14:27</b></p>
       <h1>Panel de revistas académicas iberoamericanas</h1>
       <p class="sub">Convocatorias y llamados a dossier abiertos en
         <b>521</b> revistas de ciencias sociales y humanidades
@@ -399,7 +409,7 @@ footer a{color:var(--a1)}
 </div></main>
 
 <footer><div class="env">
-  Instantánea generada el 01/08/2026 14:08. Los datos provienen de
+  Instantánea generada el 01/08/2026 14:27. Los datos provienen de
   CAICYT-CONICET, Elsevier, SciELO, DOAJ y OpenAlex, y se rigen por sus propias
   condiciones de uso. El código es MIT.<br>
   Esta página es estática: para el panel completo con actualización automática
@@ -474,6 +484,43 @@ function chip(b){
   return '<span class="chip"'+st+ti+'>'+esc(b[0])+'</span>';
 }
 
+// Google Calendar acepta los datos del evento por URL: no hace falta nada del
+// lado del servidor. Solo tiene sentido si la convocatoria declara su plazo.
+function urlCalendario(c){
+  if(!c.fecha_cierre) return null;
+  const p = String(c.fecha_cierre).slice(0,10).split('-');
+  if(p.length!==3) return null;
+  const ini = p[0]+p[1]+p[2];
+  // Evento de día completo: en Google el fin es exclusivo, va el día siguiente.
+  const f = new Date(+p[0], +p[1]-1, +p[2]+1);
+  const dd = n => String(n).padStart(2,'0');
+  const fin = f.getFullYear()+dd(f.getMonth()+1)+dd(f.getDate());
+
+  const partes = [c.titulo];
+  if(c.tema) partes.push('Tema: '+c.tema);
+  if(c.url) partes.push(c.url);
+  partes.push('', 'Verificá el plazo en el sitio de la revista antes de enviar.',
+              'Agregado desde el Panel de revistas académicas iberoamericanas.');
+
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+    + '&text=' + encodeURIComponent('Cierra convocatoria · '+c.revista)
+    + '&dates=' + ini + '/' + fin
+    + '&details=' + encodeURIComponent(partes.join('\n'))
+    + (c.url ? '&location=' + encodeURIComponent(c.url) : '');
+}
+
+function botonCalendario(c){
+  const u = urlCalendario(c);
+  if(!u) return '';
+  return '<a class="cal" href="'+u+'" target="_blank" rel="noopener" '
+    +'title="Agendar el cierre en Google Calendar">'
+    +'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" '
+    +'stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+    +'stroke-linejoin="round" aria-hidden="true">'
+    +'<rect x="3" y="4" width="18" height="18" rx="2"></rect>'
+    +'<path d="M16 2v4M8 2v4M3 10h18"></path></svg>Agendar</a>';
+}
+
 function tarjetaConv(c){
   const d=dias(c.fecha_cierre), col=GUTTER[nivelUrg(d)], p=plazoPartes(d);
   let h='<article class="tarj"><div class="gutter" style="background:'+col.bg
@@ -485,8 +532,12 @@ function tarjetaConv(c){
   h+='<div class="meta">'
     +(c.fecha_cierre?'<span class="fecha">Cierra el '+esc(c.fecha_cierre)+'</span>':'')
     +badges(c).map(chip).join('')+'<span class="pais">'+esc(c.pais)+'</span></div>';
-  if(c.url) h+='<a href="'+esc(c.url)
-    +'" target="_blank" rel="noopener">Abrir convocatoria →</a>';
+  const acciones=[];
+  if(c.url) acciones.push('<a href="'+esc(c.url)
+    +'" target="_blank" rel="noopener">Abrir convocatoria →</a>');
+  const cal = botonCalendario(c);
+  if(cal) acciones.push(cal);
+  if(acciones.length) h+='<div class="acciones">'+acciones.join('')+'</div>';
   return h+'</div></article>';
 }
 

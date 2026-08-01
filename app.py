@@ -38,6 +38,40 @@ def semaforo(d):
     return "#16a34a", f"{d} días", "🟢"
 
 
+def url_calendario(c):
+    """
+    Enlace que crea el evento en Google Calendar con el cierre.
+
+    Google acepta los datos por URL, así que no hace falta ninguna integración
+    ni que la persona autorice nada. Solo tiene sentido si hay fecha.
+    """
+    from urllib.parse import quote
+    from datetime import timedelta
+    if not c.get('fecha_cierre'):
+        return None
+    try:
+        f = date.fromisoformat(str(c['fecha_cierre'])[:10])
+    except ValueError:
+        return None
+    ini = f.strftime('%Y%m%d')
+    # Evento de día completo: en Google el fin es exclusivo.
+    fin = (f + timedelta(days=1)).strftime('%Y%m%d')
+
+    partes = [c['titulo']]
+    if c.get('tema'):
+        partes.append(f"Tema: {c['tema']}")
+    if c.get('url'):
+        partes.append(c['url'])
+    partes += ['', 'Verificá el plazo en el sitio de la revista antes de enviar.',
+               'Agregado desde el Panel de revistas académicas iberoamericanas.']
+
+    return ("https://calendar.google.com/calendar/render?action=TEMPLATE"
+            f"&text={quote('Cierra convocatoria · ' + c['revista'])}"
+            f"&dates={ini}/{fin}"
+            f"&details={quote(chr(10).join(partes))}"
+            + (f"&location={quote(c['url'])}" if c.get('url') else ""))
+
+
 def chips(r):
     """Etiquetas de nivel CONICET e indización de una revista (dict)."""
     out = []
@@ -179,8 +213,14 @@ with tab_reloj:
                 f'<div style="margin-top:6px;opacity:.75;font-size:.85em;">'
                 f'{pie}</div></div>',
                 unsafe_allow_html=True)
+            enlaces = []
             if c['url']:
-                st.markdown(f"[Abrir convocatoria →]({c['url']})")
+                enlaces.append(f"[Abrir convocatoria →]({c['url']})")
+            cal = url_calendario(c)
+            if cal:
+                enlaces.append(f"[📅 Agendar el cierre]({cal})")
+            if enlaces:
+                st.markdown("  ·  ".join(enlaces))
 
 
 # ─────────────────────────── permanentes ───────────────────────────
@@ -313,8 +353,14 @@ with tab_conv:
                 if c['descripcion']:
                     t = c['descripcion']
                     st.write(t[:300] + ("…" if len(t) > 300 else ""))
+                enlaces = []
                 if c['url']:
-                    st.markdown(f"[Abrir convocatoria →]({c['url']})")
+                    enlaces.append(f"[Abrir convocatoria →]({c['url']})")
+                cal = url_calendario(c)
+                if cal:
+                    enlaces.append(f"[📅 Agendar el cierre]({cal})")
+                if enlaces:
+                    st.markdown("  ·  ".join(enlaces))
             with der:
                 st.markdown(
                     f"<div style='text-align:right;color:{color};font-weight:700;'>"
