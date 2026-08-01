@@ -14,7 +14,7 @@ import json
 import logging
 from datetime import date, datetime
 
-from database import conectar, contar
+from database import conectar, contar, obtener_convocatorias_cerradas
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +109,8 @@ def reunir_datos():
         WHERE c.activa = 1
         ORDER BY c.fecha_cierre IS NULL, c.fecha_cierre""")]
 
+    cerradas = obtener_convocatorias_cerradas(meses=8)
+
     estados = [dict(f) for f in conn.execute("""
         SELECT COALESCE(estado_chequeo,'no revisada') AS estado, COUNT(*) AS n
         FROM revistas GROUP BY estado ORDER BY n DESC""")]
@@ -125,6 +127,9 @@ def reunir_datos():
         'con_tema': sum(1 for c in convocatorias if c['tema']),
         'con_fecha': sum(1 for c in convocatorias if c['fecha_cierre']),
         'permanentes': sum(1 for r in revistas if r['recepcion_permanente'] == 1),
+        'cerradas': len(cerradas),
+        'cerradas_sigue_abierta': sum(
+            1 for c in cerradas if c['revista_permanente'] or c['sigue_recibiendo']),
         'revision_manual': sum(1 for r in revistas if r['revision_manual']),
         'nivel1': sum(1 for r in revistas if r['nivel_conicet'] == 1),
         'nivel2': sum(1 for r in revistas if r['nivel_conicet'] == 2),
@@ -133,7 +138,7 @@ def reunir_datos():
         'doaj': sum(1 for r in revistas if r['en_doaj']),
         'generado': datetime.now().strftime('%d/%m/%Y %H:%M'),
     }
-    return revistas, convocatorias, estados, stats
+    return revistas, convocatorias, cerradas, estados, stats
 
 
 CSS = """
@@ -306,6 +311,10 @@ main{padding:24px 0 80px}
   padding:3px 10px;font-size:11.5px;font-weight:650}
 .cita{font-style:italic;color:var(--fg3);font-size:14px;line-height:1.5;
   border-left:3px solid #15803d;padding-left:12px;margin-top:10px}
+/* Lo que sigue vigente pese al cierre: reapertura o recepción abierta. */
+.reabre{margin-top:10px;padding:10px 13px;background:rgba(21,128,61,.10);
+  border-radius:9px;font-size:14px;line-height:1.5}
+:root[data-theme=dark] .reabre{background:rgba(110,231,160,.10)}
 
 .revgrid{display:grid;gap:13px;
   grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
@@ -476,6 +485,38 @@ function tarjetaPerm(r){
   return h+'</div></article>';
 }
 
+function tarjetaCerrada(c){
+  const d = dias(c.fecha_cierre);
+  const hace = d===null ? '' : (d===-1 ? 'ayer' : 'hace '+Math.abs(d)+' días');
+  let h='<article class="tarj"><div class="gutter" '
+    +'style="background:var(--chip);color:var(--fg3)">'
+    +'<span class="gnum">✕</span><span class="gtxt">cerrada</span></div>'
+    +'<div class="cuerpo"><div class="rev">'+esc(c.revista)+'</div>'
+    +'<div class="tit">'+(c.es_dossier?'📑 ':'')+esc(c.titulo)+'</div>';
+  if(c.tema) h+='<div class="tema"><b>Dossier:</b> '+esc(c.tema)+'</div>';
+
+  // Lo útil de una convocatoria cerrada: si vuelve, y si la revista recibe igual.
+  const notas=[];
+  if(c.fecha_reapertura)
+    notas.push('<b>Reabre el '+esc(c.fecha_reapertura)+'</b>');
+  if(c.revista_permanente)
+    notas.push('La revista <b>recibe artículos todo el año</b>');
+  else if(c.sigue_recibiendo)
+    notas.push('El aviso indica que <b>se siguen recibiendo trabajos</b>');
+  if(notas.length)
+    h+='<div class="reabre">'+notas.join('<br>')+'</div>';
+  else
+    h+='<div class="meta"><span class="fecha">No declara reapertura ni '
+      +'recepción abierta</span></div>';
+
+  h+='<div class="meta"><span class="fecha">Cerró el '+esc(c.fecha_cierre)
+    +(hace?' · '+hace:'')+'</span>'+badges(c).map(chip).join('')
+    +'<span class="pais">'+esc(c.pais)+'</span></div>';
+  if(c.url) h+='<a href="'+esc(c.url)
+    +'" target="_blank" rel="noopener">Ver la convocatoria →</a>';
+  return h+'</div></article>';
+}
+
 function tarjetaRev(r, manual){
   const issn=[r.issn_impreso,r.issn_online].filter(Boolean).join(' / ')||'—';
   let h='<div class="rcard"><div class="top"><div class="nombre">'
@@ -536,6 +577,26 @@ function pinta(){
         +sub.length+'</span></div>'+sub.map(tarjetaConv).join('');
     });
     cont.innerHTML = html || '<p>Sin resultados para ese filtro.</p>';
+
+  } else if(seccion==='cerr'){
+    let l=(D.cerradas||[]).filter(c=>{
+      if(pais!=='*' && c.pais!==pais) return false;
+      if(orden==='sigue' && !(c.revista_permanente||c.sigue_recibiendo)) return false;
+      if(orden==='reabre' && !c.fecha_reapertura) return false;
+      if(!q) return true;
+      return (c.revista+' '+c.titulo+' '+(c.tema||'')).toLowerCase().includes(q);
+    });
+    document.getElementById('conteo').textContent =
+      l.length+' convocatoria'+(l.length===1?'':'s')+' cerrada'
+      +(l.length===1?'':'s')+' en los últimos meses';
+    const sigue=l.filter(c=>c.revista_permanente||c.sigue_recibiendo).length;
+    aviso.className='urgente man'+(sigue?'':' oculto');
+    aviso.innerHTML = sigue
+      ? '♾️ De estas, <b>'+sigue+'</b> son de revistas que <b>siguen recibiendo '
+        +'artículos</b> pese al cierre del dossier.' : '';
+    cont.innerHTML = l.length ? l.map(tarjetaCerrada).join('')
+      : '<p>Todavía no hay convocatorias cerradas registradas. Se van a ir '
+        +'sumando a medida que venzan los plazos.</p>';
 
   } else if(seccion==='perm'){
     let l=D.revistas.filter(r=>r.recepcion_permanente===1).filter(r=>{
@@ -602,6 +663,10 @@ function cambiarSeccion(b, filtro){
       +'<option value="doaj">En DOAJ</option>'
       +'<option value="perm">Recepción permanente</option>'
       +'<option value="manual">Requieren revisión manual</option>'
+    : seccion==='cerr'
+    ? '<option value="*">Todas</option>'
+      +'<option value="sigue">La revista sigue recibiendo</option>'
+      +'<option value="reabre">Con fecha de reapertura</option>'
     : '<option value="*">Todas</option>';
   if(filtro && sel.querySelector('option[value="'+filtro+'"]')) sel.value=filtro;
   sel.classList.toggle('oculto', seccion==='perm');
@@ -707,7 +772,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 """
 
 
-def construir_html(revistas, convocatorias, estados, stats):
+def construir_html(revistas, convocatorias, cerradas, estados, stats):
     formulario = formulario_suscripcion()
     return f"""<!doctype html>
 <html lang="es"><head>
@@ -751,6 +816,8 @@ def construir_html(revistas, convocatorias, estados, stats):
       <b>{stats['dossiers']}</b><span>dossiers</span></button>
     <button class="st" data-sec="perm" data-f="*">
       <b>{stats['permanentes']}</b><span>abiertas todo el año</span></button>
+    <button class="st" data-sec="cerr" data-f="*">
+      <b>{stats['cerradas']}</b><span>cerradas hace poco</span></button>
     <button class="st" data-sec="rev" data-f="*">
       <b>{stats['revistas']}</b><span>revistas</span></button>
     <button class="st man" data-sec="rev" data-f="manual">
@@ -771,8 +838,9 @@ def construir_html(revistas, convocatorias, estados, stats):
 
 <nav><div class="env">
   <div class="segs">
-    <button data-s="conv" aria-selected="true">Convocatorias</button>
+    <button data-s="conv" aria-selected="true">Abiertas</button>
     <button data-s="perm">Permanentes</button>
+    <button data-s="cerr">Cerradas</button>
     <button data-s="rev">Revistas</button>
   </div>
   <input type="search" id="q"
@@ -881,8 +949,8 @@ def construir_gracias():
 
 def generar():
     os.makedirs(DOCS, exist_ok=True)
-    revistas, convocatorias, estados, stats = reunir_datos()
-    html = construir_html(revistas, convocatorias, estados, stats)
+    revistas, convocatorias, cerradas, estados, stats = reunir_datos()
+    html = construir_html(revistas, convocatorias, cerradas, estados, stats)
 
     ruta = os.path.join(DOCS, 'index.html')
     with open(ruta, 'w', encoding='utf-8') as f:
@@ -898,7 +966,7 @@ def generar():
     with open(ruta_json, 'w', encoding='utf-8') as f:
         json.dump({'generado': stats['generado'], 'estadisticas': stats,
                    'estados': estados, 'revistas': revistas,
-                   'convocatorias': convocatorias},
+                   'convocatorias': convocatorias, 'cerradas': cerradas},
                   f, ensure_ascii=False, separators=(',', ':'))
 
     return ruta, stats, os.path.getsize(ruta), os.path.getsize(ruta_json)

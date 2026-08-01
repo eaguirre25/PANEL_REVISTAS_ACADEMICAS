@@ -82,7 +82,11 @@ def init_db():
 
     cols_conv = {f[1] for f in c.execute("PRAGMA table_info(convocatorias)").fetchall()}
     for col, tipo in [('tipo', "TEXT DEFAULT 'con_plazo'"),
-                      ('es_dossier', 'INTEGER DEFAULT 0'), ('tema', 'TEXT')]:
+                      ('es_dossier', 'INTEGER DEFAULT 0'), ('tema', 'TEXT'),
+                      # Cuándo vuelve a abrirse, y si la revista sigue
+                      # recibiendo pese al cierre de este dossier.
+                      ('fecha_reapertura', 'DATE'),
+                      ('sigue_recibiendo', 'INTEGER DEFAULT 0')]:
         if col not in cols_conv:
             c.execute(f"ALTER TABLE convocatorias ADD COLUMN {col} {tipo}")
 
@@ -321,26 +325,28 @@ def guardar_revista(nombre, ficha_url, sitio_url, issn_impreso, issn_online, are
 
 
 def guardar_convocatoria(revista_id, titulo, descripcion, fecha_cierre, url,
-                         fuente, tipo='con_plazo', es_dossier=0, tema=None):
+                         fuente, tipo='con_plazo', es_dossier=0, tema=None,
+                         fecha_reapertura=None, sigue_recibiendo=0):
     """Inserta una convocatoria. Devuelve True si es nueva."""
     conn = conectar()
     c = conn.cursor()
     try:
         c.execute('''INSERT INTO convocatorias
                      (revista_id, titulo, descripcion, fecha_cierre, url, fuente,
-                      tipo, es_dossier, tema)
-                     VALUES (?,?,?,?,?,?,?,?,?)''',
+                      tipo, es_dossier, tema, fecha_reapertura, sigue_recibiendo)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?)''',
                   (revista_id, titulo, descripcion, fecha_cierre, url, fuente,
-                   tipo, es_dossier, tema))
+                   tipo, es_dossier, tema, fecha_reapertura, sigue_recibiendo))
         conn.commit()
         return True
     except sqlite3.IntegrityError:
         # Ya existía: actualizamos fecha de cierre por si cambió.
         c.execute('''UPDATE convocatorias SET fecha_cierre=?, url=?, tipo=?,
-                     es_dossier=?, tema=?, descripcion=?
+                     es_dossier=?, tema=?, descripcion=?, fecha_reapertura=?,
+                     sigue_recibiendo=?
                      WHERE revista_id=? AND titulo=?''',
                   (fecha_cierre, url, tipo, es_dossier, tema, descripcion,
-                   revista_id, titulo))
+                   fecha_reapertura, sigue_recibiendo, revista_id, titulo))
         conn.commit()
         return False
     finally:
@@ -360,6 +366,34 @@ def revistas_con_sitio():
 def obtener_revistas():
     conn = conectar()
     filas = conn.execute("SELECT * FROM revistas ORDER BY nombre").fetchall()
+    conn.close()
+    return [dict(f) for f in filas]
+
+
+def obtener_convocatorias_cerradas(meses=8):
+    """
+    Convocatorias cuyo plazo ya venció, dentro de una ventana reciente.
+
+    Se muestran porque siguen siendo útiles: dicen cuándo reabren, si las hay,
+    y permiten ver si la revista recibe igual todo el año. Más allá de unos
+    meses dejan de informar y solo agregan ruido, por eso la ventana.
+    """
+    conn = conectar()
+    filas = conn.execute('''
+        SELECT c.id, c.titulo, c.descripcion, c.fecha_cierre, c.url, c.fuente,
+               COALESCE(c.es_dossier,0) AS es_dossier, c.tema,
+               c.fecha_reapertura, COALESCE(c.sigue_recibiendo,0) AS sigue_recibiendo,
+               r.nombre AS revista, r.sitio_url AS revista_url,
+               COALESCE(r.pais,'Argentina') AS pais, r.nivel_conicet,
+               r.en_scopus, r.scopus_estado, r.en_scielo, r.en_doaj,
+               COALESCE(r.recepcion_permanente,0) AS revista_permanente
+        FROM convocatorias c
+        JOIN revistas r ON c.revista_id = r.id
+        WHERE c.activa = 0 AND c.fecha_cierre IS NOT NULL
+          AND date(c.fecha_cierre) < date('now')
+          AND date(c.fecha_cierre) >= date('now', ?)
+        ORDER BY c.fecha_cierre DESC
+    ''', (f'-{meses} months',)).fetchall()
     conn.close()
     return [dict(f) for f in filas]
 

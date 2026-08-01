@@ -125,8 +125,8 @@ convocatorias = obtener_convocatorias()
 revistas = obtener_revistas()
 por_nombre = {r['nombre']: r for r in revistas}
 
-tab_reloj, tab_perm, tab_conv, tab_rev, tab_bol, tab_cob = st.tabs(
-    ["⏱️ Reloj", "♾️ Permanentes", "📋 Convocatorias",
+tab_reloj, tab_perm, tab_conv, tab_cerr, tab_rev, tab_bol, tab_cob = st.tabs(
+    ["⏱️ Reloj", "♾️ Permanentes", "📋 Convocatorias", "✕ Cerradas",
      "🔍 Buscar revistas", "✉️ Boletín", "📊 Cobertura"])
 
 
@@ -321,6 +321,70 @@ with tab_conv:
                     f"{emoji}<br>{etiqueta}</div>", unsafe_allow_html=True)
                 if c['fecha_cierre']:
                     st.caption(str(c['fecha_cierre']))
+
+
+# ─────────────────────────── cerradas ───────────────────────────
+with tab_cerr:
+    from database import obtener_convocatorias_cerradas
+    cerradas = obtener_convocatorias_cerradas(meses=8)
+
+    st.subheader(f"Convocatorias cerradas en los últimos meses ({len(cerradas)})")
+    st.caption("Una convocatoria cerrada sigue informando: dice si vuelve a "
+               "abrirse y si la revista recibe artículos igual.")
+
+    if not cerradas:
+        st.info("Todavía no hay convocatorias cerradas registradas. Se van a "
+                "ir sumando a medida que venzan los plazos.")
+    else:
+        sigue = sum(1 for c in cerradas
+                    if c['revista_permanente'] or c['sigue_recibiendo'])
+        if sigue:
+            st.success(f"♾️ De estas, **{sigue}** son de revistas que **siguen "
+                       "recibiendo artículos** pese al cierre del dossier.")
+
+        f1, f2 = st.columns([3, 1])
+        q_cer = f1.text_input("Filtrar", "", key="q_cer",
+                              placeholder="revista, título o tema")
+        solo_abiertas = f2.checkbox("Solo las que siguen recibiendo")
+
+        for c in cerradas:
+            if solo_abiertas and not (c['revista_permanente']
+                                      or c['sigue_recibiendo']):
+                continue
+            if q_cer:
+                blob = f"{c['revista']} {c['titulo']} {c.get('tema') or ''}".lower()
+                if q_cer.lower() not in blob:
+                    continue
+
+            with st.container(border=True):
+                izq, der = st.columns([5, 1])
+                with izq:
+                    st.markdown(f"**{'📑 ' if c['es_dossier'] else ''}{c['titulo']}**")
+                    st.caption(f"📚 {c['revista']} · {c['pais']}")
+                    if c.get('tema'):
+                        st.caption(f"Tema: {c['tema']}")
+
+                    if c['fecha_reapertura']:
+                        st.success(f"🔁 Reabre el **{c['fecha_reapertura']}**")
+                    if c['revista_permanente']:
+                        st.info("♾️ La revista **recibe artículos todo el año**: "
+                                "podés enviar aunque este dossier haya cerrado.")
+                    elif c['sigue_recibiendo']:
+                        st.info("El aviso indica que **se siguen recibiendo "
+                                "trabajos** por fuera del dossier.")
+                    elif not c['fecha_reapertura']:
+                        st.caption("No declara reapertura ni recepción abierta.")
+
+                    if c['url']:
+                        st.markdown(f"[Ver la convocatoria →]({c['url']})")
+                with der:
+                    d = dias_restantes(c['fecha_cierre'])
+                    st.markdown("<div style='text-align:right;color:#6b7280;"
+                                "font-weight:700;'>✕<br>cerrada</div>",
+                                unsafe_allow_html=True)
+                    st.caption(str(c['fecha_cierre']))
+                    if d is not None:
+                        st.caption(f"hace {abs(d)} días")
 
 
 # ─────────────────────────── buscar revistas ───────────────────────────

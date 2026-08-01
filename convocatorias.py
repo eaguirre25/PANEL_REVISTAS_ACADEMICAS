@@ -116,6 +116,47 @@ def extraer_fecha(texto):
     return None
 
 
+# Frases que anuncian cuándo vuelve a abrirse la recepción.
+CONTEXTO_REAPERTURA = re.compile(
+    r'pr[óo]xima\s+convocatoria|pr[óo]xima\s+recepci[óo]n|se\s+reabre|'
+    r'reapertura|vuelve\s+a\s+abrir|nueva\s+convocatoria\s+(?:a\s+partir|en|desde)|'
+    r'la\s+recepci[óo]n\s+se\s+reanuda|se\s+reanuda|'
+    r'pr[óo]ximo\s+n[úu]mero\s+(?:se\s+)?recibe|a\s+partir\s+del?', re.I)
+
+# Declaraciones de que, aunque cierre el dossier, la revista sigue recibiendo.
+SIGUE_RECIBIENDO = re.compile(
+    r'(?:secci[óo]n|convocatoria)\s+(?:de\s+)?(?:art[íi]culos\s+)?libres?|'
+    r'temas\s+libres|art[íi]culos\s+libres|miscel[áa]nea|varia\b|'
+    r'(?:se\s+)?contin[úu]a\s+recibiendo|sigue\s+recibiendo|'
+    r'recepci[óo]n\s+permanente|flujo\s+continuo', re.I)
+
+
+def extraer_reapertura(texto):
+    """
+    Fecha en que vuelve a abrirse la recepción, si el aviso la declara.
+
+    Se busca solo cerca de una frase que anuncie la reapertura: cualquier fecha
+    futura suelta en el texto podría ser la de publicación del número, no la de
+    la próxima convocatoria.
+    """
+    if not texto:
+        return None
+    hoy = date.today()
+    for pos, f in _fechas_en(texto):
+        ventana = texto[max(0, pos - 130):pos]
+        if CONTEXTO_REAPERTURA.search(ventana) and f > hoy:
+            return f.isoformat()
+    return None
+
+
+def sigue_recibiendo(texto):
+    """True si el aviso aclara que, más allá del dossier, se reciben trabajos."""
+    if not texto:
+        return False
+    m = SIGUE_RECIBIENDO.search(texto)
+    return bool(m)
+
+
 def parece_vieja(titulo):
     """True si el título declara un año anterior al actual (aviso archivado)."""
     anios = [int(a) for a in re.findall(r'\b(20\d{2})\b', titulo)]
@@ -265,9 +306,11 @@ def revisar_revista(sesion, revista):
         desc = re.sub(r'\s+', ' ', cuerpo)[:600]
         dossier = bool(ES_DOSSIER.search(titulo) or ES_DOSSIER.search(desc[:400]))
         tema = extraer_tema(titulo, desc) if dossier else None
-        encontradas.append(dict(titulo=titulo[:250], descripcion=desc,
-                                fecha_cierre=fecha, url=enlace,
-                                es_dossier=1 if dossier else 0, tema=tema))
+        encontradas.append(dict(
+            titulo=titulo[:250], descripcion=desc, fecha_cierre=fecha,
+            url=enlace, es_dossier=1 if dossier else 0, tema=tema,
+            fecha_reapertura=extraer_reapertura(cuerpo),
+            sigue_recibiendo=1 if sigue_recibiendo(cuerpo) else 0))
 
     if not encontradas:
         return 'sin convocatorias', []
@@ -317,10 +360,12 @@ def buscar_convocatorias(workers=8, progreso=None):
 
             for c in convs:
                 total += 1
-                if guardar_convocatoria(rv['id'], c['titulo'], c['descripcion'],
-                                        c['fecha_cierre'], c['url'],
-                                        'OJS/announcement',
-                                        es_dossier=c['es_dossier'], tema=c['tema']):
+                if guardar_convocatoria(
+                        rv['id'], c['titulo'], c['descripcion'],
+                        c['fecha_cierre'], c['url'], 'OJS/announcement',
+                        es_dossier=c['es_dossier'], tema=c['tema'],
+                        fecha_reapertura=c['fecha_reapertura'],
+                        sigue_recibiendo=c['sigue_recibiendo']):
                     nuevas += 1
 
             if progreso and i % 10 == 0:
