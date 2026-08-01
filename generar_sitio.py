@@ -94,12 +94,14 @@ def reunir_datos():
     # Una revista "requiere revisión manual" si no se pudo leer: su sitio no
     # responde, cambió de dirección o exige registrarse. Las que antes caían
     # acá por protección anti-bot ahora se leen con el navegador asistido.
-    import re as _re
-    patron_manual = _re.compile(
-        r'anti-bot|login|inaccesible|redirec|^http \d|^error', _re.I)
+    # Un solo criterio para toda la app: si no es ninguno de los tres
+    # resultados de una lectura exitosa, es porque no se pudo leer. Definirlo
+    # por lo que NO es evita que dos partes del código cuenten distinto.
+    LEIDA_OK = {'ok', 'sin convocatorias', 'sin pagina de anuncios'}
     for r in revistas:
-        r['revision_manual'] = 1 if patron_manual.search(
-            r['estado_chequeo'] or '') else 0
+        estado = r['estado_chequeo']
+        r['revision_manual'] = (
+            1 if (r['sitio_url'] and estado and estado not in LEIDA_OK) else 0)
 
     convocatorias = [dict(f) for f in conn.execute("""
         SELECT c.titulo, c.descripcion, c.fecha_cierre, c.url,
@@ -137,6 +139,17 @@ def reunir_datos():
         'con_sjr': sum(1 for r in revistas if r['en_scimago']),
         'q1': sum(1 for r in revistas if r['cuartil_sjr'] == 'Q1'),
         'q2': sum(1 for r in revistas if r['cuartil_sjr'] == 'Q2'),
+        # Partición del catálogo: las cuatro categorías siguientes son
+        # excluyentes y suman el total. Sin esto, las métricas del encabezado
+        # mezclan convocatorias con revistas y no hay forma de que cierren.
+        'rev_con_conv': sum(
+            1 for r in revistas if r['sitio_url'] and r['estado_chequeo'] == 'ok'),
+        'rev_sin_conv': sum(
+            1 for r in revistas
+            if r['sitio_url'] and r['estado_chequeo'] == 'sin convocatorias'),
+        'rev_sin_pagina': sum(
+            1 for r in revistas
+            if r['sitio_url'] and r['estado_chequeo'] == 'sin pagina de anuncios'),
         'cerradas': len(cerradas),
         'cerradas_sigue_abierta': sum(
             1 for c in cerradas if c['revista_permanente'] or c['sigue_recibiendo']),
@@ -263,6 +276,18 @@ h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;
 .st.man{background:rgba(180,83,9,.1);border-color:rgba(180,83,9,.32)}
 .st.man b,.st.man span{color:#b45309}
 :root[data-theme=dark] .st.man b,:root[data-theme=dark] .st.man span{color:#fcd34d}
+.st.ok{background:rgba(5,150,105,.10);border-color:rgba(5,150,105,.30)}
+.st.ok b,.st.ok span{color:#047857}
+:root[data-theme=dark] .st.ok b,:root[data-theme=dark] .st.ok span{color:#6ee7a0}
+.st.ref{background:var(--chip);border-color:transparent;opacity:.85}
+/* Rótulo que dice qué unidad cuenta el grupo de abajo: sin esto las cajas de
+   convocatorias y las de revistas se leen como una sola serie sumable. */
+.rotulo{margin:20px 0 8px;font-size:12.5px;text-transform:uppercase;
+  letter-spacing:.09em;color:var(--fg3);font-weight:700;
+  font-family:'Bricolage Grotesque',system-ui,sans-serif}
+.rotulo b{color:var(--fg);font-size:14px}
+.rotulo .acota{display:block;text-transform:none;letter-spacing:0;
+  font-weight:500;font-size:12.5px;color:var(--fg4);margin-top:2px}
 .stats2{margin:12px 0 0;display:flex;gap:2px;flex-wrap:wrap;color:var(--fg3);
   font-size:13px;align-items:center}
 .stats2 button{background:none;border:0;font-family:inherit;font-size:13px;
@@ -717,6 +742,12 @@ function pinta(){
       if(orden==='q1' && r.cuartil_sjr!=='Q1') return false;
       if(orden==='q12' && !['Q1','Q2'].includes(r.cuartil_sjr)) return false;
       if(orden==='seguidas' && !r.sitio_url) return false;
+      if(orden==='referencia' && r.sitio_url) return false;
+      if(orden==='conconv' && !(r.sitio_url && r.estado_chequeo==='ok')) return false;
+      if(orden==='sinconv' &&
+         !(r.sitio_url && r.estado_chequeo==='sin convocatorias')) return false;
+      if(orden==='sinpagina' &&
+         !(r.sitio_url && r.estado_chequeo==='sin pagina de anuncios')) return false;
       if(manual && r.revision_manual!==1) return false;
       if(!q) return true;
       return (r.nombre+' '+(r.institucion||'')+' '+(r.issn_impreso||'')+' '
@@ -757,6 +788,10 @@ function cambiarSeccion(b, filtro){
     : seccion==='rev'
     ? '<option value="*">Todas</option>'
       +'<option value="seguidas">Con seguimiento de convocatorias</option>'
+      +'<option value="conconv">Con convocatoria detectada</option>'
+      +'<option value="sinconv">Revisadas, sin convocatoria vigente</option>'
+      +'<option value="sinpagina">Sin página de anuncios</option>'
+      +'<option value="referencia">Solo referencia (sin sitio)</option>'
       +'<option value="q1">SciMago Q1</option>'
       +'<option value="q12">SciMago Q1 o Q2</option>'
       +'<option value="n1">Solo Nivel 1</option>'
@@ -918,25 +953,36 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
     <button id="tema" title="Cambiar entre tema claro y oscuro"
             aria-label="Cambiar tema">◑</button>
   </div>
+  <p class="rotulo">Convocatorias</p>
   <div class="stats">
     <button class="st urg" data-sec="conv" data-f="urgente">
       <b id="stUrg">–</b><span>cierran en 7 días</span></button>
     <button class="st" data-sec="conv" data-f="*">
-      <b>{stats['convocatorias']}</b><span>convocatorias</span></button>
+      <b>{stats['convocatorias']}</b><span>abiertas</span></button>
     <button class="st" data-sec="conv" data-f="dossier">
-      <b>{stats['dossiers']}</b><span>dossiers</span></button>
+      <b>{stats['dossiers']}</b><span>son dossiers</span></button>
     <button class="st" data-sec="perm" data-f="*">
-      <b>{stats['permanentes']}</b><span>abiertas todo el año</span></button>
+      <b>{stats['permanentes']}</b><span>revistas abiertas todo el año</span></button>
     <button class="st" data-sec="cerr" data-f="*">
       <b>{stats['cerradas']}</b><span>cerradas hace poco</span></button>
-    <button class="st" data-sec="rev" data-f="*">
-      <b>{stats['revistas']}</b><span>revistas</span></button>
+  </div>
+
+  <p class="rotulo">Revistas en el catálogo · <b>{stats['revistas']}</b>
+    <span class="acota">las cuatro cifras siguientes son excluyentes y
+      suman ese total</span></p>
+  <div class="stats">
+    <button class="st ok" data-sec="rev" data-f="conconv">
+      <b>{stats['rev_con_conv']}</b><span>con convocatoria detectada</span></button>
+    <button class="st" data-sec="rev" data-f="sinconv">
+      <b>{stats['rev_sin_conv']}</b><span>revisadas, sin convocatoria vigente</span></button>
+    <button class="st" data-sec="rev" data-f="sinpagina">
+      <b>{stats['rev_sin_pagina']}</b><span>sin página de anuncios</span></button>
     <button class="st man" data-sec="rev" data-f="manual">
-      <b>{stats['revision_manual']}</b><span>requieren revisión manual</span></button>
+      <b>{stats['revision_manual']}</b><span>no se pudieron leer</span></button>
+    <button class="st ref" data-sec="rev" data-f="referencia">
+      <b>{stats['solo_referencia']}</b><span>solo referencia, sin sitio</span></button>
   </div>
   <p class="stats2">
-    <button data-sec="rev" data-f="seguidas"><b>{stats['con_seguimiento']}</b>
-      con seguimiento</button>
     <button data-sec="rev" data-f="q1"><b>{stats['q1']}</b> SciMago Q1</button>
     <button data-sec="rev" data-f="q12"><b>{stats['q1'] + stats['q2']}</b> Q1 o Q2</button>
     <button data-sec="rev" data-f="n1"><b>{stats['nivel1']}</b> Nivel 1</button>
