@@ -283,21 +283,21 @@ footer a{color:var(--a1)}
     <button class="st urg" data-sec="conv" data-f="urgente">
       <b id="stUrg">–</b><span>cierran en 7 días</span></button>
     <button class="st" data-sec="conv" data-f="*">
-      <b>173</b><span>convocatorias</span></button>
+      <b>195</b><span>convocatorias</span></button>
     <button class="st" data-sec="conv" data-f="dossier">
-      <b>84</b><span>dossiers</span></button>
+      <b>89</b><span>dossiers</span></button>
     <button class="st" data-sec="perm" data-f="*">
-      <b>71</b><span>abiertas todo el año</span></button>
+      <b>78</b><span>abiertas todo el año</span></button>
     <button class="st" data-sec="rev" data-f="*">
       <b>501</b><span>revistas</span></button>
     <button class="st man" data-sec="rev" data-f="manual">
-      <b>88</b><span>requieren revisión manual</span></button>
+      <b>27</b><span>requieren revisión manual</span></button>
   </div>
   <p class="stats2">
-    <button data-sec="rev" data-f="n1"><b>179</b> Nivel 1</button>
-    <button data-sec="rev" data-f="scopus"><b>100</b> en Scopus</button>
-    <button data-sec="rev" data-f="scielo"><b>131</b> en SciELO</button>
-    <button data-sec="rev" data-f="doaj"><b>327</b> en DOAJ</button>
+    <button data-sec="rev" data-f="n1"><b>196</b> Nivel 1</button>
+    <button data-sec="rev" data-f="scopus"><b>106</b> en Scopus</button>
+    <button data-sec="rev" data-f="scielo"><b>145</b> en SciELO</button>
+    <button data-sec="rev" data-f="doaj"><b>338</b> en DOAJ</button>
   </p>
   <p class="enlaces">
     <a href="#boletin">Recibir el resumen semanal →</a>
@@ -349,11 +349,13 @@ footer a{color:var(--a1)}
   <div class="aviso" id="limitaciones">
     <h3>Antes de confiar en esto para un envío</h3>
     <ol>
-      <li>Solo <b>25 de 173</b>
+      <li>Solo <b>26 de 195</b>
         convocatorias declaran su fecha de cierre en un formato legible. Las
         demás figuran «sin fecha declarada»: el reloj no puede avisar de ellas.</li>
-      <li>Las revistas cuyo sitio usa protección anti-bot <b>se saltean, no se
-        evaden</b>. Si tienen convocatoria abierta, no aparece acá.</li>
+      <li>Las revistas que no se pudieron leer aparecen en <b>«requieren
+        revisión manual»</b>, con el motivo: servidor caído, dominio que ya no
+        existe, o sitio que exige registrarse. Si tienen convocatoria abierta,
+        no figura acá.</li>
       <li>Puede haber falsos positivos. <b>Verificá siempre en el enlace</b>
         antes de preparar un envío.</li>
       <li>El nivel es la jerarquía de la Res. D 2249/2014 del CONICET, que
@@ -367,7 +369,7 @@ footer a{color:var(--a1)}
 </div></main>
 
 <footer><div class="env">
-  Instantánea generada el 31/07/2026 23:55. Los datos provienen de
+  Instantánea generada el 01/08/2026 13:25. Los datos provienen de
   CAICYT-CONICET, Elsevier, SciELO, DOAJ y OpenAlex, y se rigen por sus propias
   condiciones de uso. El código es MIT.<br>
   Esta página es estática: para el panel completo con actualización automática
@@ -558,9 +560,9 @@ function pinta(){
       + (l.length>revLimite ? ' · mostrando '+revLimite : '');
     aviso.className='urgente man'+(manual?'':' oculto');
     aviso.innerHTML = manual
-      ? '🔍 Estas revistas <b>no se pudieron leer automáticamente</b>: su sitio '
-        +'bloquea la lectura o no respondió. Si tienen convocatoria abierta, no '
-        +'aparece en este panel — conviene mirarlas a mano.' : '';
+      ? '🔍 Estas revistas <b>no se pudieron leer</b>: su servidor no responde, '
+        +'cambió de dirección o exige registrarse. Si tienen convocatoria '
+        +'abierta, no aparece en este panel — conviene mirarlas a mano.' : '';
 
     cont.innerHTML='<div class="revgrid">'
       + (l.slice(0,revLimite).map(r=>tarjetaRev(r,manual)).join('')

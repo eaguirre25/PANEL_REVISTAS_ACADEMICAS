@@ -89,8 +89,9 @@ def reunir_datos():
                recepcion_permanente, evidencia_permanente, estado_chequeo
         FROM revistas ORDER BY nombre""")]
 
-    # Una revista "requiere revisión manual" si su sitio bloqueó la lectura
-    # automática o no respondió: su convocatoria, si la tiene, no está acá.
+    # Una revista "requiere revisión manual" si no se pudo leer: su sitio no
+    # responde, cambió de dirección o exige registrarse. Las que antes caían
+    # acá por protección anti-bot ahora se leen con el navegador asistido.
     import re as _re
     patron_manual = _re.compile(
         r'anti-bot|login|inaccesible|redirec|^http \d|^error', _re.I)
@@ -567,9 +568,9 @@ function pinta(){
       + (l.length>revLimite ? ' · mostrando '+revLimite : '');
     aviso.className='urgente man'+(manual?'':' oculto');
     aviso.innerHTML = manual
-      ? '🔍 Estas revistas <b>no se pudieron leer automáticamente</b>: su sitio '
-        +'bloquea la lectura o no respondió. Si tienen convocatoria abierta, no '
-        +'aparece en este panel — conviene mirarlas a mano.' : '';
+      ? '🔍 Estas revistas <b>no se pudieron leer</b>: su servidor no responde, '
+        +'cambió de dirección o exige registrarse. Si tienen convocatoria '
+        +'abierta, no aparece en este panel — conviene mirarlas a mano.' : '';
 
     cont.innerHTML='<div class="revgrid">'
       + (l.slice(0,revLimite).map(r=>tarjetaRev(r,manual)).join('')
@@ -809,8 +810,10 @@ def construir_html(revistas, convocatorias, estados, stats):
       <li>Solo <b>{stats['con_fecha']} de {stats['convocatorias']}</b>
         convocatorias declaran su fecha de cierre en un formato legible. Las
         demás figuran «sin fecha declarada»: el reloj no puede avisar de ellas.</li>
-      <li>Las revistas cuyo sitio usa protección anti-bot <b>se saltean, no se
-        evaden</b>. Si tienen convocatoria abierta, no aparece acá.</li>
+      <li>Las revistas que no se pudieron leer aparecen en <b>«requieren
+        revisión manual»</b>, con el motivo: servidor caído, dominio que ya no
+        existe, o sitio que exige registrarse. Si tienen convocatoria abierta,
+        no figura acá.</li>
       <li>Puede haber falsos positivos. <b>Verificá siempre en el enlace</b>
         antes de preparar un envío.</li>
       <li>El nivel es la jerarquía de la Res. D 2249/2014 del CONICET, que

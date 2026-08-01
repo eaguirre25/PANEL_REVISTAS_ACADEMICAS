@@ -71,6 +71,10 @@ def init_db():
         # Revistas de fuera del NBRA (resto de América Latina).
         ('origen', "TEXT DEFAULT 'NBRA'"), ('pais', 'TEXT'),
         ('indexacion_declarada', 'TEXT'), ('resolucion', 'TEXT'),
+        # Última vez que la fuente pudo leerse. Una convocatoria no desaparece
+        # porque esta semana el sitio estuvo bloqueado: se muestra con la fecha
+        # de su última verificación.
+        ('ultima_revision_ok', 'TIMESTAMP'), ('metodo_revision', 'TEXT'),
     ]
     for col, tipo in nuevas_rev:
         if col not in existentes:
@@ -225,13 +229,55 @@ def marcar_recepcion_permanente(revista_id, permanente, evidencia):
     conn.close()
 
 
-def marcar_chequeo(revista_id, estado):
-    """Registra el resultado del último intento de leer convocatorias."""
+def marcar_chequeo(revista_id, estado, metodo='automatico'):
+    """
+    Registra el resultado del último intento de leer convocatorias.
+
+    Solo se pisa `ultima_revision_ok` cuando la lectura funcionó: así una
+    convocatoria hallada hace tres semanas sigue mostrándose, con la fecha en
+    que se la verificó por última vez, en lugar de desaparecer porque hoy el
+    sitio no respondió.
+    """
     conn = conectar()
-    conn.execute("UPDATE revistas SET ultimo_chequeo=?, estado_chequeo=? WHERE id=?",
-                 (datetime.now(), estado, revista_id))
+    if estado in ('ok', 'sin convocatorias'):
+        conn.execute("""UPDATE revistas SET ultimo_chequeo=?, estado_chequeo=?,
+                        ultima_revision_ok=?, metodo_revision=? WHERE id=?""",
+                     (datetime.now(), estado, datetime.now(), metodo, revista_id))
+    else:
+        conn.execute("UPDATE revistas SET ultimo_chequeo=?, estado_chequeo=? "
+                     "WHERE id=?", (datetime.now(), estado, revista_id))
     conn.commit()
     conn.close()
+
+
+def revistas_bloqueadas():
+    """
+    Revistas cuya lectura automática falló, agrupadas por dominio.
+
+    Se agrupa por dominio porque la protección suele estar a nivel de servidor:
+    varias revistas comparten la plataforma de una universidad, y resolver la
+    verificación una vez habilita todas las de ese dominio.
+    """
+    import re as _re
+    from collections import OrderedDict
+    conn = conectar()
+    filas = conn.execute(
+        """SELECT id, nombre, sitio_url, estado_chequeo, ultima_revision_ok
+           FROM revistas
+           WHERE sitio_url IS NOT NULL AND sitio_url != ''
+             AND estado_chequeo IS NOT NULL
+             AND (estado_chequeo LIKE '%anti-bot%' OR estado_chequeo LIKE '%login%'
+                  OR estado_chequeo LIKE '%inaccesible%' OR estado_chequeo LIKE 'http%'
+                  OR estado_chequeo LIKE '%redirec%')
+           ORDER BY nombre""").fetchall()
+    conn.close()
+
+    por_dominio = OrderedDict()
+    for f in filas:
+        m = _re.match(r'https?://([^/]+)', f['sitio_url'] or '')
+        dom = m.group(1).lower() if m else '(sin dominio)'
+        por_dominio.setdefault(dom, []).append(dict(f))
+    return por_dominio
 
 
 def desactivar_convocatorias_vencidas():

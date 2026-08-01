@@ -548,9 +548,45 @@ with tab_cob:
                                for e in estados]),
                  use_container_width=True, hide_index=True)
 
+    # ── navegador asistido ──
+    from navegador_asistido import estado_cola
+    cola = estado_cola()
+    if cola:
+        total_cola = sum(n for _, n, _ in cola)
+        st.markdown("**🖥️ Leer las pendientes con el navegador asistido**")
+        st.caption(
+            f"{total_cola} revistas en {len(cola)} dominios no se pudieron leer. "
+            "Abre Chrome en un perfil aparte, con sesión que se reutiliza entre "
+            "corridas. Si aparece una verificación, resolvela en la ventana; "
+            "queda guardada para las próximas.")
+
+        st.dataframe(
+            pd.DataFrame([{"Dominio": d, "Revistas": n,
+                           "Con lectura previa": ok} for d, n, ok in cola]),
+            use_container_width=True, hide_index=True)
+
+        c1, c2 = st.columns([2, 1])
+        doms = c1.multiselect("Limitar a estos dominios (vacío = todos)",
+                              [d for d, _, _ in cola])
+        if c2.button("Abrir navegador y leer", use_container_width=True):
+            from navegador_asistido import revisar
+            barra = st.progress(0.0, "Abriendo Chrome...")
+            res = revisar(dominios=doms or None,
+                          progreso=lambda i, t, n: barra.progress(
+                              i / t, f"{i}/{t} · {n[:40]}"))
+            barra.empty()
+            st.success(f"{res['revisadas']} revistas leídas · "
+                       f"{res['convocatorias']} convocatorias "
+                       f"({res['nuevas']} nuevas) · "
+                       f"{res['permanentes']} recepciones permanentes")
+            for p in res['pendientes']:
+                st.warning(p)
+            st.rerun()
+        st.divider()
+
     st.markdown("**Revistas que requieren revisión manual**")
-    st.caption("Su sitio bloquea la lectura automática o no responde. "
-               "Si tienen convocatoria abierta, no aparece en esta app.")
+    st.caption("Su servidor no responde, cambió de dirección o exige "
+               "registrarse. Si tienen convocatoria abierta, no aparece acá.")
     filas = conn.execute(
         """SELECT nombre, estado_chequeo, sitio_url, nivel_conicet FROM revistas
            WHERE estado_chequeo IS NOT NULL

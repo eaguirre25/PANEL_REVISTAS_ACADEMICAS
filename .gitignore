@@ -34,3 +34,6 @@ build/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Perfil de Chrome del navegador asistido: cookies y sesion.
+perfil-revistas/

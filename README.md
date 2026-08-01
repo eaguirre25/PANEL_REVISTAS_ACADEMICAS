@@ -202,9 +202,9 @@ Esto **no reemplaza** revisar las revistas que te importan.
 
 1. **Pocas convocatorias declaran su plazo** en formato legible. Las demás
    aparecen como "sin fecha declarada" y el reloj no puede avisar de ellas.
-2. **~48 revistas usan protección anti-scraping** (Anubis, Cloudflare). **No se
-   evaden**: se saltean y se listan en la pestaña *Cobertura* para revisarlas a
-   mano.
+2. **27 revistas no se pudieron leer**, y ninguna por protección anti-bot: sus
+   servidores no responden, su dominio ya no existe o exigen registrarse. Se
+   listan en *Cobertura* con el motivo.
 3. **Muchas revistas no tienen página de anuncios** en su OJS; publican las
    convocatorias en su portada, redes o PDF.
 4. **Puede haber falsos positivos.** Un aviso titulado "Suspensión de recepción
@@ -216,6 +216,50 @@ Esto **no reemplaza** revisar las revistas que te importan.
 6. **La indización de las revistas extranjeras está parcialmente verificada.**
    Las que no tienen ISSN resuelto figuran sin nivel: *"sin determinar"* no
    significa *"no indizada"*.
+
+### Navegador asistido, para las fuentes con verificación
+
+Varias plataformas universitarias ponen [Anubis](https://github.com/TecharoHQ/anubis)
+delante de todo el dominio: un desafío de prueba-de-trabajo que resuelve el
+JavaScript del navegador. Un cliente HTTP común queda afuera — y no solo el
+scraper: también OAI-PMH y los RSS, que son interfaces pensadas para máquinas.
+El propio proyecto Anubis advierte que su protección alcanza a bots legítimos
+y a servicios de preservación e indexación.
+
+`navegador_asistido.py` resuelve eso abriendo esas revistas en **Chrome con un
+perfil propio y sesión persistente**:
+
+```bash
+python navegador_asistido.py --cola          # ver qué falta, agrupado por dominio
+python navegador_asistido.py                 # leer todo
+python navegador_asistido.py revistas.unc.edu.ar   # solo un dominio
+```
+
+- Corre **en tu máquina**, no en un servidor: usa tu conexión y un navegador real
+- Guarda cookies en `perfil-revistas/`, separado de tu Chrome personal
+- La ventana queda visible: si aparece una verificación, la resolvés vos y la
+  sesión queda guardada para las próximas corridas
+- Agrupa por dominio, porque la protección es del servidor: resolver una vez
+  habilita todas las revistas de esa plataforma
+- Si un dominio vuelve a desafiar, esa fuente queda pendiente y se informa
+
+**Lo que no hace:** complementos «stealth», alteración de la huella del
+navegador, rotación de proxies, resolución de CAPTCHAs ni manipulación de
+encabezados para disimular la automatización. La verificación la pasa el
+navegador o una persona; el programa solo aprovecha la sesión abierta.
+
+Tolera certificados vencidos o mal emitidos (`ignore_https_errors`), que en los
+OJS universitarios son frecuentes y que un navegador también salta tras una
+advertencia.
+
+**No corre en la tarea de los lunes**, porque necesita una ventana visible. Es
+un paso aparte, a mano, desde la pestaña *Cobertura* de la app o por consola.
+
+### Los datos no desaparecen si la fuente falla
+
+`ultima_revision_ok` guarda la última lectura exitosa de cada revista. Una
+convocatoria hallada hace tres semanas sigue mostrándose aunque hoy el sitio no
+responda: se informa cuándo se la verificó por última vez, en vez de borrarla.
 
 ### Decisiones de diseño que vale la pena conocer
 
