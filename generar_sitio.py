@@ -87,6 +87,7 @@ def reunir_datos():
                issn_impreso, issn_online, sitio_url, ficha_url,
                nivel_conicet, en_scopus, scopus_estado, en_scielo, en_doaj,
                COALESCE(wos_declarado,0) AS wos_declarado,
+               COALESCE(en_scimago,0) AS en_scimago, sjr, cuartil_sjr,
                recepcion_permanente, evidencia_permanente, estado_chequeo
         FROM revistas ORDER BY nombre""")]
 
@@ -105,7 +106,8 @@ def reunir_datos():
                COALESCE(c.es_dossier,0) AS es_dossier, c.tema,
                r.nombre AS revista, COALESCE(r.pais,'Argentina') AS pais,
                r.nivel_conicet, r.en_scopus, r.scopus_estado,
-               r.en_scielo, r.en_doaj, COALESCE(r.wos_declarado,0) AS wos_declarado
+               r.en_scielo, r.en_doaj, COALESCE(r.wos_declarado,0) AS wos_declarado,
+               COALESCE(r.en_scimago,0) AS en_scimago, r.sjr, r.cuartil_sjr
         FROM convocatorias c JOIN revistas r ON r.id = c.revista_id
         WHERE c.activa = 1
         ORDER BY c.fecha_cierre IS NULL, c.fecha_cierre""")]
@@ -128,6 +130,13 @@ def reunir_datos():
         'con_tema': sum(1 for c in convocatorias if c['tema']),
         'con_fecha': sum(1 for c in convocatorias if c['fecha_cierre']),
         'permanentes': sum(1 for r in revistas if r['recepcion_permanente'] == 1),
+        # Con sitio web el rastreador puede seguir sus convocatorias; sin él,
+        # la revista entra al catálogo como referencia.
+        'con_seguimiento': sum(1 for r in revistas if r['sitio_url']),
+        'solo_referencia': sum(1 for r in revistas if not r['sitio_url']),
+        'con_sjr': sum(1 for r in revistas if r['en_scimago']),
+        'q1': sum(1 for r in revistas if r['cuartil_sjr'] == 'Q1'),
+        'q2': sum(1 for r in revistas if r['cuartil_sjr'] == 'Q2'),
         'cerradas': len(cerradas),
         'cerradas_sigue_abierta': sum(
             1 for c in cerradas if c['revista_permanente'] or c['sigue_recibiendo']),
@@ -466,10 +475,17 @@ function badges(r){
     const activa = String(r.scopus_estado||'').toLowerCase()==='active';
     b.push([activa ? 'Scopus' : 'Scopus ('+r.scopus_estado+')',
             '#e0e7ff','#4338ca','']);
-    // SCImago calcula el SJR sobre las fuentes de Scopus: estar en una
-    // equivale a estar en la otra. No es una verificación aparte.
-    b.push(['SciMago','#ede9fe','#6d28d9',
-            'SCImago indexa las revistas de Scopus: se deriva de ese dato']);
+  }
+  // SCImago con el cuartil del ranking, que es el dato que importa: ya no se
+  // deriva de Scopus, viene del CSV oficial del ranking.
+  if(r.en_scimago){
+    const q = r.cuartil_sjr;
+    const col = {Q1:['#ede9fe','#5b21b6'], Q2:['#f3e8ff','#7e22ce'],
+                 Q3:['#faf5ff','#9333ea'], Q4:['#fdf4ff','#a855f7']}[q]
+                || ['#f5f3ff','#7c3aed'];
+    b.push(['SciMago'+(q?' '+q:''), col[0], col[1],
+            r.sjr ? 'SJR '+Number(r.sjr).toFixed(3)+' · ranking SCImago 2025'
+                  : 'Ranking SCImago 2025']);
   }
   if(r.en_scielo) b.push(['SciELO','#dcfce7','#15803d','']);
   if(r.en_doaj) b.push(['DOAJ','#fce7f3','#a21caf','']);
@@ -698,6 +714,9 @@ function pinta(){
       if(orden==='scielo' && !r.en_scielo) return false;
       if(orden==='doaj' && !r.en_doaj) return false;
       if(orden==='perm' && r.recepcion_permanente!==1) return false;
+      if(orden==='q1' && r.cuartil_sjr!=='Q1') return false;
+      if(orden==='q12' && !['Q1','Q2'].includes(r.cuartil_sjr)) return false;
+      if(orden==='seguidas' && !r.sitio_url) return false;
       if(manual && r.revision_manual!==1) return false;
       if(!q) return true;
       return (r.nombre+' '+(r.institucion||'')+' '+(r.issn_impreso||'')+' '
@@ -736,7 +755,11 @@ function cambiarSeccion(b, filtro){
       +'<option value="dossier">Solo dossiers</option>'
       +'<option value="fecha">Solo con fecha</option>'
     : seccion==='rev'
-    ? '<option value="*">Todas</option><option value="n1">Solo Nivel 1</option>'
+    ? '<option value="*">Todas</option>'
+      +'<option value="seguidas">Con seguimiento de convocatorias</option>'
+      +'<option value="q1">SciMago Q1</option>'
+      +'<option value="q12">SciMago Q1 o Q2</option>'
+      +'<option value="n1">Solo Nivel 1</option>'
       +'<option value="scopus">En Scopus</option>'
       +'<option value="scielo">En SciELO</option>'
       +'<option value="doaj">En DOAJ</option>'
@@ -912,6 +935,10 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
       <b>{stats['revision_manual']}</b><span>requieren revisión manual</span></button>
   </div>
   <p class="stats2">
+    <button data-sec="rev" data-f="seguidas"><b>{stats['con_seguimiento']}</b>
+      con seguimiento</button>
+    <button data-sec="rev" data-f="q1"><b>{stats['q1']}</b> SciMago Q1</button>
+    <button data-sec="rev" data-f="q12"><b>{stats['q1'] + stats['q2']}</b> Q1 o Q2</button>
     <button data-sec="rev" data-f="n1"><b>{stats['nivel1']}</b> Nivel 1</button>
     <button data-sec="rev" data-f="scopus"><b>{stats['scopus']}</b> en Scopus</button>
     <button data-sec="rev" data-f="scielo"><b>{stats['scielo']}</b> en SciELO</button>
@@ -978,6 +1005,12 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
         que difieren entre sí respecto de su calidad».</li>
       <li>Para las revistas de fuera de Argentina, «sin nivel» significa que no
         se pudo verificar, <b>no</b> que no estén indizadas.</li>
+      <li>De las <b>{stats['revistas']}</b> revistas del catálogo, se sigue la
+        página de convocatorias de <b>{stats['con_seguimiento']}</b>. Las otras
+        <b>{stats['solo_referencia']}</b> —en su mayoría incorporadas del
+        ranking SCImago— están como <b>referencia</b>: podés consultar su
+        cuartil y su indización, pero el panel <b>no rastrea</b> sus
+        convocatorias.</li>
     </ol>
   </div>
 </div></main>

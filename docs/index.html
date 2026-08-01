@@ -4,8 +4,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Panel de revistas académicas iberoamericanas</title>
 <meta name="description" content="Convocatorias y llamados a dossier abiertos
- en 521 revistas de ciencias sociales y humanidades de
- 25 países de Iberoamérica.">
+ en 980 revistas de ciencias sociales y humanidades de
+ 27 países de Iberoamérica.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;600;700;800&display=swap"
@@ -297,11 +297,11 @@ footer a{color:var(--a1)}
   <div class="hcab">
     <div>
       <p class="sello"><span class="punto"></span>
-        Última actualización automática: <b>01/08/2026 14:27</b></p>
+        Última actualización automática: <b>01/08/2026 18:20</b></p>
       <h1>Panel de revistas académicas iberoamericanas</h1>
       <p class="sub">Convocatorias y llamados a dossier abiertos en
-        <b>521</b> revistas de ciencias sociales y humanidades
-        de <b>25</b> países. Los plazos se calculan con la fecha
+        <b>980</b> revistas de ciencias sociales y humanidades
+        de <b>27</b> países. Los plazos se calculan con la fecha
         de hoy.</p>
       <p class="firma">Desarrollado por <b>Elías Aguirre</b>. Comentarios,
         feedback y consultas a <a id="contacto" href="#">(escribir)</a>.</p>
@@ -328,13 +328,17 @@ footer a{color:var(--a1)}
     <button class="st" data-sec="cerr" data-f="*">
       <b>3</b><span>cerradas hace poco</span></button>
     <button class="st" data-sec="rev" data-f="*">
-      <b>521</b><span>revistas</span></button>
+      <b>980</b><span>revistas</span></button>
     <button class="st man" data-sec="rev" data-f="manual">
       <b>27</b><span>requieren revisión manual</span></button>
   </div>
   <p class="stats2">
-    <button data-sec="rev" data-f="n1"><b>182</b> Nivel 1</button>
-    <button data-sec="rev" data-f="scopus"><b>102</b> en Scopus</button>
+    <button data-sec="rev" data-f="seguidas"><b>421</b>
+      con seguimiento</button>
+    <button data-sec="rev" data-f="q1"><b>29</b> SciMago Q1</button>
+    <button data-sec="rev" data-f="q12"><b>155</b> Q1 o Q2</button>
+    <button data-sec="rev" data-f="n1"><b>640</b> Nivel 1</button>
+    <button data-sec="rev" data-f="scopus"><b>560</b> en Scopus</button>
     <button data-sec="rev" data-f="scielo"><b>132</b> en SciELO</button>
     <button data-sec="rev" data-f="doaj"><b>334</b> en DOAJ</button>
   </p>
@@ -404,12 +408,18 @@ footer a{color:var(--a1)}
         que difieren entre sí respecto de su calidad».</li>
       <li>Para las revistas de fuera de Argentina, «sin nivel» significa que no
         se pudo verificar, <b>no</b> que no estén indizadas.</li>
+      <li>De las <b>980</b> revistas del catálogo, se sigue la
+        página de convocatorias de <b>421</b>. Las otras
+        <b>559</b> —en su mayoría incorporadas del
+        ranking SCImago— están como <b>referencia</b>: podés consultar su
+        cuartil y su indización, pero el panel <b>no rastrea</b> sus
+        convocatorias.</li>
     </ol>
   </div>
 </div></main>
 
 <footer><div class="env">
-  Instantánea generada el 01/08/2026 14:27. Los datos provienen de
+  Instantánea generada el 01/08/2026 18:20. Los datos provienen de
   CAICYT-CONICET, Elsevier, SciELO, DOAJ y OpenAlex, y se rigen por sus propias
   condiciones de uso. El código es MIT.<br>
   Esta página es estática: para el panel completo con actualización automática
@@ -464,10 +474,17 @@ function badges(r){
     const activa = String(r.scopus_estado||'').toLowerCase()==='active';
     b.push([activa ? 'Scopus' : 'Scopus ('+r.scopus_estado+')',
             '#e0e7ff','#4338ca','']);
-    // SCImago calcula el SJR sobre las fuentes de Scopus: estar en una
-    // equivale a estar en la otra. No es una verificación aparte.
-    b.push(['SciMago','#ede9fe','#6d28d9',
-            'SCImago indexa las revistas de Scopus: se deriva de ese dato']);
+  }
+  // SCImago con el cuartil del ranking, que es el dato que importa: ya no se
+  // deriva de Scopus, viene del CSV oficial del ranking.
+  if(r.en_scimago){
+    const q = r.cuartil_sjr;
+    const col = {Q1:['#ede9fe','#5b21b6'], Q2:['#f3e8ff','#7e22ce'],
+                 Q3:['#faf5ff','#9333ea'], Q4:['#fdf4ff','#a855f7']}[q]
+                || ['#f5f3ff','#7c3aed'];
+    b.push(['SciMago'+(q?' '+q:''), col[0], col[1],
+            r.sjr ? 'SJR '+Number(r.sjr).toFixed(3)+' · ranking SCImago 2025'
+                  : 'Ranking SCImago 2025']);
   }
   if(r.en_scielo) b.push(['SciELO','#dcfce7','#15803d','']);
   if(r.en_doaj) b.push(['DOAJ','#fce7f3','#a21caf','']);
@@ -696,6 +713,9 @@ function pinta(){
       if(orden==='scielo' && !r.en_scielo) return false;
       if(orden==='doaj' && !r.en_doaj) return false;
       if(orden==='perm' && r.recepcion_permanente!==1) return false;
+      if(orden==='q1' && r.cuartil_sjr!=='Q1') return false;
+      if(orden==='q12' && !['Q1','Q2'].includes(r.cuartil_sjr)) return false;
+      if(orden==='seguidas' && !r.sitio_url) return false;
       if(manual && r.revision_manual!==1) return false;
       if(!q) return true;
       return (r.nombre+' '+(r.institucion||'')+' '+(r.issn_impreso||'')+' '
@@ -734,7 +754,11 @@ function cambiarSeccion(b, filtro){
       +'<option value="dossier">Solo dossiers</option>'
       +'<option value="fecha">Solo con fecha</option>'
     : seccion==='rev'
-    ? '<option value="*">Todas</option><option value="n1">Solo Nivel 1</option>'
+    ? '<option value="*">Todas</option>'
+      +'<option value="seguidas">Con seguimiento de convocatorias</option>'
+      +'<option value="q1">SciMago Q1</option>'
+      +'<option value="q12">SciMago Q1 o Q2</option>'
+      +'<option value="n1">Solo Nivel 1</option>'
       +'<option value="scopus">En Scopus</option>'
       +'<option value="scielo">En SciELO</option>'
       +'<option value="doaj">En DOAJ</option>'

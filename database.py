@@ -79,6 +79,10 @@ def init_db():
         # la lista pública de Clarivate solo se consulta por una API interna
         # que rechaza las peticiones externas.
         ('wos_declarado', 'INTEGER DEFAULT 0'),
+        # SCImago Journal Rank: dato real del ranking, no derivado de Scopus.
+        ('en_scimago', 'INTEGER DEFAULT 0'), ('sjr', 'REAL'),
+        ('cuartil_sjr', 'TEXT'), ('h_scimago', 'INTEGER'),
+        ('areas_scimago', 'TEXT'), ('editorial', 'TEXT'),
     ]
     for col, tipo in nuevas_rev:
         if col not in existentes:
