@@ -139,6 +139,10 @@ def reunir_datos():
         'con_sjr': sum(1 for r in revistas if r['en_scimago']),
         'q1': sum(1 for r in revistas if r['cuartil_sjr'] == 'Q1'),
         'q2': sum(1 for r in revistas if r['cuartil_sjr'] == 'Q2'),
+        'q3': sum(1 for r in revistas if r['cuartil_sjr'] == 'Q3'),
+        'q4': sum(1 for r in revistas if r['cuartil_sjr'] == 'Q4'),
+        'sin_cuartil': sum(1 for r in revistas
+                           if r['en_scimago'] and not r['cuartil_sjr']),
         # Partición del catálogo: las cuatro categorías siguientes son
         # excluyentes y suman el total. Sin esto, las métricas del encabezado
         # mezclan convocatorias con revistas y no hay forma de que cierren.
@@ -150,6 +154,11 @@ def reunir_datos():
         'rev_sin_pagina': sum(
             1 for r in revistas
             if r['sitio_url'] and r['estado_chequeo'] == 'sin pagina de anuncios'),
+        # Tienen dirección pero el rastreador todavía no pasó: aparecen al
+        # incorporar sitios nuevos, entre una corrida semanal y la siguiente.
+        # Sin esta categoría la partición no cierra.
+        'rev_sin_revisar': sum(
+            1 for r in revistas if r['sitio_url'] and not r['estado_chequeo']),
         'cerradas': len(cerradas),
         'cerradas_sigue_abierta': sum(
             1 for c in cerradas if c['revista_permanente'] or c['sigue_recibiendo']),
@@ -288,6 +297,9 @@ h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;
 .rotulo b{color:var(--fg);font-size:14px}
 .rotulo .acota{display:block;text-transform:none;letter-spacing:0;
   font-weight:500;font-size:12.5px;color:var(--fg4);margin-top:2px}
+.acota.suelta{margin:10px 0 0;font-size:13px;color:var(--fg3);line-height:1.55;
+  max-width:78ch;background:var(--bg2);border-radius:9px;padding:11px 14px}
+.acota.suelta b{color:var(--fg)}
 .stats2{margin:12px 0 0;display:flex;gap:2px;flex-wrap:wrap;color:var(--fg3);
   font-size:13px;align-items:center}
 .stats2 button{background:none;border:0;font-family:inherit;font-size:13px;
@@ -739,8 +751,9 @@ function pinta(){
       if(orden==='scielo' && !r.en_scielo) return false;
       if(orden==='doaj' && !r.en_doaj) return false;
       if(orden==='perm' && r.recepcion_permanente!==1) return false;
-      if(orden==='q1' && r.cuartil_sjr!=='Q1') return false;
-      if(orden==='q12' && !['Q1','Q2'].includes(r.cuartil_sjr)) return false;
+      if(['q1','q2','q3','q4'].includes(orden)
+         && r.cuartil_sjr !== orden.toUpperCase()) return false;
+      if(orden==='sincuartil' && !(r.en_scimago && !r.cuartil_sjr)) return false;
       if(orden==='seguidas' && !r.sitio_url) return false;
       if(orden==='referencia' && r.sitio_url) return false;
       if(orden==='conconv' && !(r.sitio_url && r.estado_chequeo==='ok')) return false;
@@ -748,6 +761,7 @@ function pinta(){
          !(r.sitio_url && r.estado_chequeo==='sin convocatorias')) return false;
       if(orden==='sinpagina' &&
          !(r.sitio_url && r.estado_chequeo==='sin pagina de anuncios')) return false;
+      if(orden==='sinrevisar' && !(r.sitio_url && !r.estado_chequeo)) return false;
       if(manual && r.revision_manual!==1) return false;
       if(!q) return true;
       return (r.nombre+' '+(r.institucion||'')+' '+(r.issn_impreso||'')+' '
@@ -791,9 +805,13 @@ function cambiarSeccion(b, filtro){
       +'<option value="conconv">Con convocatoria detectada</option>'
       +'<option value="sinconv">Revisadas, sin convocatoria vigente</option>'
       +'<option value="sinpagina">Sin página de anuncios</option>'
-      +'<option value="referencia">Solo referencia (sin sitio)</option>'
+      +'<option value="sinrevisar">Pendientes de la próxima corrida</option>'
+      +'<option value="referencia">Sin dirección conocida</option>'
       +'<option value="q1">SciMago Q1</option>'
-      +'<option value="q12">SciMago Q1 o Q2</option>'
+      +'<option value="q2">SciMago Q2</option>'
+      +'<option value="q3">SciMago Q3</option>'
+      +'<option value="q4">SciMago Q4</option>'
+      +'<option value="sincuartil">En SciMago, sin cuartil</option>'
       +'<option value="n1">Solo Nivel 1</option>'
       +'<option value="scopus">En Scopus</option>'
       +'<option value="scielo">En SciELO</option>'
@@ -971,24 +989,52 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
     <span class="acota">las cinco cifras siguientes son excluyentes entre sí
       y suman ese total</span></p>
   <div class="stats">
-    <button class="st ok" data-sec="rev" data-f="conconv">
-      <b>{stats['rev_con_conv']}</b><span>con convocatoria detectada</span></button>
-    <button class="st" data-sec="rev" data-f="sinconv">
-      <b>{stats['rev_sin_conv']}</b><span>revisadas, sin convocatoria vigente</span></button>
-    <button class="st" data-sec="rev" data-f="sinpagina">
-      <b>{stats['rev_sin_pagina']}</b><span>sin página de anuncios</span></button>
-    <button class="st man" data-sec="rev" data-f="manual">
+    <button class="st ok" data-sec="rev" data-f="conconv"
+       title="Tienen al menos una convocatoria abierta en este momento">
+      <b>{stats['rev_con_conv']}</b><span>tienen convocatoria abierta</span></button>
+    <button class="st" data-sec="rev" data-f="sinconv"
+       title="Se leyó su página de avisos y en este momento no hay ninguna convocatoria vigente. Pueden abrir una más adelante.">
+      <b>{stats['rev_sin_conv']}</b><span>se leyeron y hoy no tienen ninguna</span></button>
+    <button class="st" data-sec="rev" data-f="sinpagina"
+       title="Su plataforma no tiene sección de avisos, así que difunden las convocatorias por otras vías: la portada, redes o un PDF.">
+      <b>{stats['rev_sin_pagina']}</b><span>no publican avisos en su sitio</span></button>
+    <button class="st man" data-sec="rev" data-f="manual"
+       title="Su servidor no responde, cambió de dirección o exige registrarse">
       <b>{stats['revision_manual']}</b><span>no se pudieron leer</span></button>
-    <button class="st ref" data-sec="rev" data-f="referencia">
-      <b>{stats['solo_referencia']}</b><span>solo referencia, sin sitio</span></button>
+    <button class="st" data-sec="rev" data-f="sinrevisar"
+       title="Tienen dirección pero el rastreador todavía no pasó: se incorporaron después de la última corrida">
+      <b>{stats['rev_sin_revisar']}</b><span>pendientes de la próxima corrida</span></button>
+    <button class="st ref" data-sec="rev" data-f="referencia"
+       title="Están en el catálogo con su indización, pero no tenemos su dirección para seguirlas">
+      <b>{stats['solo_referencia']}</b><span>sin dirección conocida</span></button>
   </div>
+  <p class="acota suelta">
+    <b>Qué significan:</b> el rastreador entra cada semana a la página de avisos
+    de cada revista. «Se leyeron y hoy no tienen ninguna» son las que abrió y
+    encontró vacías —pueden publicar una convocatoria la semana que viene—.
+    «No publican avisos en su sitio» son las que directamente no tienen esa
+    sección: difunden sus llamados por la portada, redes o un PDF, y ahí el
+    panel no llega.</p>
+
+  <p class="rotulo">SCImago · <b>{stats['con_sjr']}</b> revistas con SJR
+    <span class="acota">los cuartiles reparten ese total</span></p>
   <p class="stats2">
-    <button data-sec="rev" data-f="q1"><b>{stats['q1']}</b> SciMago Q1</button>
-    <button data-sec="rev" data-f="q12"><b>{stats['q1'] + stats['q2']}</b> Q1 o Q2</button>
-    <button data-sec="rev" data-f="n1"><b>{stats['nivel1']}</b> Nivel 1</button>
+    <button data-sec="rev" data-f="q1"><b>{stats['q1']}</b> Q1</button>
+    <button data-sec="rev" data-f="q2"><b>{stats['q2']}</b> Q2</button>
+    <button data-sec="rev" data-f="q3"><b>{stats['q3']}</b> Q3</button>
+    <button data-sec="rev" data-f="q4"><b>{stats['q4']}</b> Q4</button>
+    <button data-sec="rev" data-f="sincuartil"><b>{stats['sin_cuartil']}</b>
+      sin cuartil</button>
+  </p>
+
+  <p class="rotulo">Otras bases
+    <span class="acota">se superponen entre sí y con SCImago: una revista puede
+      estar en varias</span></p>
+  <p class="stats2">
     <button data-sec="rev" data-f="scopus"><b>{stats['scopus']}</b> en Scopus</button>
     <button data-sec="rev" data-f="scielo"><b>{stats['scielo']}</b> en SciELO</button>
     <button data-sec="rev" data-f="doaj"><b>{stats['doaj']}</b> en DOAJ</button>
+    <button data-sec="rev" data-f="n1"><b>{stats['nivel1']}</b> Nivel 1 CONICET</button>
   </p>
   <p class="enlaces">
     <a href="#boletin">Recibir el resumen semanal →</a>

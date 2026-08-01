@@ -134,6 +134,9 @@ h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;
 .rotulo b{color:var(--fg);font-size:14px}
 .rotulo .acota{display:block;text-transform:none;letter-spacing:0;
   font-weight:500;font-size:12.5px;color:var(--fg4);margin-top:2px}
+.acota.suelta{margin:10px 0 0;font-size:13px;color:var(--fg3);line-height:1.55;
+  max-width:78ch;background:var(--bg2);border-radius:9px;padding:11px 14px}
+.acota.suelta b{color:var(--fg)}
 .stats2{margin:12px 0 0;display:flex;gap:2px;flex-wrap:wrap;color:var(--fg3);
   font-size:13px;align-items:center}
 .stats2 button{background:none;border:0;font-family:inherit;font-size:13px;
@@ -309,7 +312,7 @@ footer a{color:var(--a1)}
   <div class="hcab">
     <div>
       <p class="sello"><span class="punto"></span>
-        Última actualización automática: <b>01/08/2026 19:36</b></p>
+        Última actualización automática: <b>01/08/2026 19:53</b></p>
       <h1>Panel de revistas académicas iberoamericanas</h1>
       <p class="sub">Convocatorias y llamados a dossier abiertos en
         <b>980</b> revistas de ciencias sociales y humanidades
@@ -333,11 +336,11 @@ footer a{color:var(--a1)}
     <button class="st urg" data-sec="conv" data-f="urgente">
       <b id="stUrg">–</b><span>cierran en 7 días</span></button>
     <button class="st" data-sec="conv" data-f="*">
-      <b>341</b><span>abiertas</span></button>
+      <b>446</b><span>abiertas</span></button>
     <button class="st" data-sec="conv" data-f="dossier">
-      <b>140</b><span>son dossiers</span></button>
+      <b>172</b><span>son dossiers</span></button>
     <button class="st" data-sec="perm" data-f="*">
-      <b>118</b><span>revistas abiertas todo el año</span></button>
+      <b>124</b><span>revistas abiertas todo el año</span></button>
     <button class="st" data-sec="cerr" data-f="*">
       <b>1</b><span>cerradas hace poco</span></button>
   </div>
@@ -346,24 +349,52 @@ footer a{color:var(--a1)}
     <span class="acota">las cinco cifras siguientes son excluyentes entre sí
       y suman ese total</span></p>
   <div class="stats">
-    <button class="st ok" data-sec="rev" data-f="conconv">
-      <b>114</b><span>con convocatoria detectada</span></button>
-    <button class="st" data-sec="rev" data-f="sinconv">
-      <b>372</b><span>revisadas, sin convocatoria vigente</span></button>
-    <button class="st" data-sec="rev" data-f="sinpagina">
-      <b>265</b><span>sin página de anuncios</span></button>
-    <button class="st man" data-sec="rev" data-f="manual">
-      <b>47</b><span>no se pudieron leer</span></button>
-    <button class="st ref" data-sec="rev" data-f="referencia">
-      <b>182</b><span>solo referencia, sin sitio</span></button>
+    <button class="st ok" data-sec="rev" data-f="conconv"
+       title="Tienen al menos una convocatoria abierta en este momento">
+      <b>120</b><span>tienen convocatoria abierta</span></button>
+    <button class="st" data-sec="rev" data-f="sinconv"
+       title="Se leyó su página de avisos y en este momento no hay ninguna convocatoria vigente. Pueden abrir una más adelante.">
+      <b>349</b><span>se leyeron y hoy no tienen ninguna</span></button>
+    <button class="st" data-sec="rev" data-f="sinpagina"
+       title="Su plataforma no tiene sección de avisos, así que difunden las convocatorias por otras vías: la portada, redes o un PDF.">
+      <b>284</b><span>no publican avisos en su sitio</span></button>
+    <button class="st man" data-sec="rev" data-f="manual"
+       title="Su servidor no responde, cambió de dirección o exige registrarse">
+      <b>136</b><span>no se pudieron leer</span></button>
+    <button class="st" data-sec="rev" data-f="sinrevisar"
+       title="Tienen dirección pero el rastreador todavía no pasó: se incorporaron después de la última corrida">
+      <b>0</b><span>pendientes de la próxima corrida</span></button>
+    <button class="st ref" data-sec="rev" data-f="referencia"
+       title="Están en el catálogo con su indización, pero no tenemos su dirección para seguirlas">
+      <b>91</b><span>sin dirección conocida</span></button>
   </div>
+  <p class="acota suelta">
+    <b>Qué significan:</b> el rastreador entra cada semana a la página de avisos
+    de cada revista. «Se leyeron y hoy no tienen ninguna» son las que abrió y
+    encontró vacías —pueden publicar una convocatoria la semana que viene—.
+    «No publican avisos en su sitio» son las que directamente no tienen esa
+    sección: difunden sus llamados por la portada, redes o un PDF, y ahí el
+    panel no llega.</p>
+
+  <p class="rotulo">SCImago · <b>534</b> revistas con SJR
+    <span class="acota">los cuartiles reparten ese total</span></p>
   <p class="stats2">
-    <button data-sec="rev" data-f="q1"><b>29</b> SciMago Q1</button>
-    <button data-sec="rev" data-f="q12"><b>155</b> Q1 o Q2</button>
-    <button data-sec="rev" data-f="n1"><b>640</b> Nivel 1</button>
+    <button data-sec="rev" data-f="q1"><b>29</b> Q1</button>
+    <button data-sec="rev" data-f="q2"><b>126</b> Q2</button>
+    <button data-sec="rev" data-f="q3"><b>210</b> Q3</button>
+    <button data-sec="rev" data-f="q4"><b>165</b> Q4</button>
+    <button data-sec="rev" data-f="sincuartil"><b>4</b>
+      sin cuartil</button>
+  </p>
+
+  <p class="rotulo">Otras bases
+    <span class="acota">se superponen entre sí y con SCImago: una revista puede
+      estar en varias</span></p>
+  <p class="stats2">
     <button data-sec="rev" data-f="scopus"><b>560</b> en Scopus</button>
     <button data-sec="rev" data-f="scielo"><b>132</b> en SciELO</button>
     <button data-sec="rev" data-f="doaj"><b>334</b> en DOAJ</button>
+    <button data-sec="rev" data-f="n1"><b>640</b> Nivel 1 CONICET</button>
   </p>
   <p class="enlaces">
     <a href="#boletin">Recibir el resumen semanal →</a>
@@ -416,7 +447,7 @@ footer a{color:var(--a1)}
   <div class="aviso" id="limitaciones">
     <h3>Antes de confiar en esto para un envío</h3>
     <ol>
-      <li>Solo <b>72 de 341</b>
+      <li>Solo <b>79 de 446</b>
         convocatorias declaran su fecha de cierre en un formato legible. Las
         demás figuran «sin fecha declarada»: el reloj no puede avisar de ellas.</li>
       <li>Las revistas que no se pudieron leer aparecen en <b>«requieren
@@ -432,8 +463,8 @@ footer a{color:var(--a1)}
       <li>Para las revistas de fuera de Argentina, «sin nivel» significa que no
         se pudo verificar, <b>no</b> que no estén indizadas.</li>
       <li>De las <b>980</b> revistas del catálogo, se sigue la
-        página de convocatorias de <b>798</b>. Las otras
-        <b>182</b> —en su mayoría incorporadas del
+        página de convocatorias de <b>889</b>. Las otras
+        <b>91</b> —en su mayoría incorporadas del
         ranking SCImago— están como <b>referencia</b>: podés consultar su
         cuartil y su indización, pero el panel <b>no rastrea</b> sus
         convocatorias.</li>
@@ -442,7 +473,7 @@ footer a{color:var(--a1)}
 </div></main>
 
 <footer><div class="env">
-  Instantánea generada el 01/08/2026 19:36. Los datos provienen de
+  Instantánea generada el 01/08/2026 19:53. Los datos provienen de
   CAICYT-CONICET, Elsevier, SciELO, DOAJ y OpenAlex, y se rigen por sus propias
   condiciones de uso. El código es MIT.<br>
   Esta página es estática: para el panel completo con actualización automática
@@ -736,8 +767,9 @@ function pinta(){
       if(orden==='scielo' && !r.en_scielo) return false;
       if(orden==='doaj' && !r.en_doaj) return false;
       if(orden==='perm' && r.recepcion_permanente!==1) return false;
-      if(orden==='q1' && r.cuartil_sjr!=='Q1') return false;
-      if(orden==='q12' && !['Q1','Q2'].includes(r.cuartil_sjr)) return false;
+      if(['q1','q2','q3','q4'].includes(orden)
+         && r.cuartil_sjr !== orden.toUpperCase()) return false;
+      if(orden==='sincuartil' && !(r.en_scimago && !r.cuartil_sjr)) return false;
       if(orden==='seguidas' && !r.sitio_url) return false;
       if(orden==='referencia' && r.sitio_url) return false;
       if(orden==='conconv' && !(r.sitio_url && r.estado_chequeo==='ok')) return false;
@@ -745,6 +777,7 @@ function pinta(){
          !(r.sitio_url && r.estado_chequeo==='sin convocatorias')) return false;
       if(orden==='sinpagina' &&
          !(r.sitio_url && r.estado_chequeo==='sin pagina de anuncios')) return false;
+      if(orden==='sinrevisar' && !(r.sitio_url && !r.estado_chequeo)) return false;
       if(manual && r.revision_manual!==1) return false;
       if(!q) return true;
       return (r.nombre+' '+(r.institucion||'')+' '+(r.issn_impreso||'')+' '
@@ -788,9 +821,13 @@ function cambiarSeccion(b, filtro){
       +'<option value="conconv">Con convocatoria detectada</option>'
       +'<option value="sinconv">Revisadas, sin convocatoria vigente</option>'
       +'<option value="sinpagina">Sin página de anuncios</option>'
-      +'<option value="referencia">Solo referencia (sin sitio)</option>'
+      +'<option value="sinrevisar">Pendientes de la próxima corrida</option>'
+      +'<option value="referencia">Sin dirección conocida</option>'
       +'<option value="q1">SciMago Q1</option>'
-      +'<option value="q12">SciMago Q1 o Q2</option>'
+      +'<option value="q2">SciMago Q2</option>'
+      +'<option value="q3">SciMago Q3</option>'
+      +'<option value="q4">SciMago Q4</option>'
+      +'<option value="sincuartil">En SciMago, sin cuartil</option>'
       +'<option value="n1">Solo Nivel 1</option>'
       +'<option value="scopus">En Scopus</option>'
       +'<option value="scielo">En SciELO</option>'
