@@ -229,11 +229,26 @@ def importar(workers=4, progreso=None):
             en_scopus = 1 if sc else 0
             estado_scopus = sc[2] if sc else None
 
-            # ISSN: primero DOAJ (formato con guion), luego el de Scopus.
-            issn_i = doaj.get('issn_impreso') or ''
-            issn_o = doaj.get('issn_online') or ''
-            if not (issn_i or issn_o) and sc:
-                issn_i, issn_o = (sc[0] or ''), (sc[1] or '')
+            # ISSN: manda Scopus cuando hubo coincidencia exacta de título;
+            # DOAJ solo cuando Scopus no encontró nada.
+            #
+            # Al revés se producían asignaciones cruzadas: "Práxis Educativa"
+            # (UEPG, Brasil) recibía el ISSN de "Praxis educativa (Santa Rosa)"
+            # (UNLPam, Argentina), porque la búsqueda de DOAJ por título ignora
+            # el acento y devolvía la argentina. Con un ISSN ajeno, todas las
+            # indizaciones que se derivan de él quedan mal.
+            def _con_guion(v):
+                n = re.sub(r'[^0-9Xx]', '', str(v or '')).upper()
+                return f"{n[:4]}-{n[4:]}" if len(n) == 8 else ''
+
+            if sc:
+                issn_i, issn_o = _con_guion(sc[0]), _con_guion(sc[1])
+                if not (issn_i or issn_o):
+                    issn_i = doaj.get('issn_impreso') or ''
+                    issn_o = doaj.get('issn_online') or ''
+            else:
+                issn_i = doaj.get('issn_impreso') or ''
+                issn_o = doaj.get('issn_online') or ''
 
             ns = [n for n in (normalizar_issn(issn_i), normalizar_issn(issn_o)) if n]
             if not en_scopus and any(n in scopus_issn for n in ns):
@@ -255,11 +270,32 @@ def importar(workers=4, progreso=None):
             if not procedencia:
                 procedencia.append("sin coincidencia en Scopus ni DOAJ")
 
-            estado, rid = guardar_revista_externa(
-                nombre, pais, institucion, sitio_final, issn_i, issn_o,
-                declarada, " · ".join(procedencia))
-            if estado == 'nueva':
-                resumen['nuevas'] += 1
+            # Si el ISSN ya está en el catálogo, es la misma revista bajo otro
+            # nombre: se enriquece la existente en vez de duplicarla.
+            from database import buscar_por_issn, conectar as _conectar
+            rid_existente = buscar_por_issn([issn_i, issn_o])
+            if rid_existente:
+                cx = _conectar()
+                cx.execute(
+                    """UPDATE revistas
+                       SET sitio_url = CASE WHEN COALESCE(sitio_url,'')=''
+                                            THEN ? ELSE sitio_url END,
+                           indexacion_declarada = COALESCE(indexacion_declarada, ?),
+                           pais = COALESCE(pais, ?)
+                       WHERE id = ?""",
+                    (sitio_final, declarada, pais, rid_existente))
+                cx.commit()
+                cx.close()
+                rid = rid_existente
+                estado = 'fusionada'
+                resumen.setdefault('fusionadas', 0)
+                resumen['fusionadas'] += 1
+            else:
+                estado, rid = guardar_revista_externa(
+                    nombre, pais, institucion, sitio_final, issn_i, issn_o,
+                    declarada, " · ".join(procedencia))
+                if estado == 'nueva':
+                    resumen['nuevas'] += 1
 
             guardar_indizacion(rid, dict(
                 en_scopus=en_scopus, scopus_estado=estado_scopus,

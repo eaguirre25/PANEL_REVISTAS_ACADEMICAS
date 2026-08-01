@@ -12,6 +12,7 @@ from convocatorias import buscar_convocatorias
 from indizacion import actualizar_indizacion
 from permanentes import detectar_permanentes
 from externas import importar as importar_externas
+from manuales import cargar as cargar_manuales
 
 logging.basicConfig(
     level=logging.INFO,
@@ -45,6 +46,12 @@ def actualizar_todo():
     logger.info("Recepción permanente: %s revistas de %s revisadas",
                 perm['permanentes'], perm['revisadas'])
 
+    # Después del rastreo: lo verificado a mano no se pierde y pisa lo que el
+    # rastreador no pudo leer (sitios con anti-bot, convocatorias en PDF).
+    man = cargar_manuales()
+    logger.info("Carga manual: %s permanentes, %s convocatorias",
+                man['permanentes'], man['convocatorias'])
+
     ind = actualizar_indizacion()
     logger.info("Indización: Nivel 1 %s, Nivel 2 %s | Scopus %s, SciELO %s, DOAJ %s",
                 ind['nivel1'], ind['nivel2'], ind['scopus'], ind['scielo'], ind['doaj'])
@@ -56,7 +63,7 @@ def actualizar_todo():
                 "" if bol['correo_configurado'] else " (correo sin configurar)")
 
     logger.info("ACTUALIZACIÓN COMPLETADA")
-    return cat, ext, conv, perm, ind, bol
+    return cat, ext, conv, perm, man, ind, bol
 
 
 if __name__ == "__main__":

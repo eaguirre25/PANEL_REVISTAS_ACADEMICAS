@@ -1,4 +1,5 @@
 """Base de datos SQLite del Tracker de Revistas CONICET."""
+import re
 import sqlite3
 from datetime import datetime
 from pathlib import Path
@@ -156,6 +157,33 @@ def guardar_indizacion(revista_id, datos):
                   datetime.now(), revista_id))
     conn.commit()
     conn.close()
+
+
+def buscar_por_issn(issns):
+    """
+    Devuelve el id de la revista que ya tenga alguno de esos ISSN.
+
+    Evita duplicar una revista que ya está en el catálogo bajo otro nombre:
+    el NBRA la llama "Cuadernos de la Facultad de Humanidades y Ciencias
+    Sociales. Universidad Nacional de Jujuy" y un listado externo, sin el
+    sufijo institucional. El ISSN es el mismo y es inequívoco.
+    """
+    limpios = []
+    for i in issns:
+        n = re.sub(r'[^0-9Xx]', '', str(i or '')).upper()
+        if len(n) == 8:
+            limpios.append(f"{n[:4]}-{n[4:]}")
+    if not limpios:
+        return None
+
+    conn = conectar()
+    marcas = ','.join('?' * len(limpios))
+    fila = conn.execute(
+        f"""SELECT id FROM revistas
+            WHERE issn_impreso IN ({marcas}) OR issn_online IN ({marcas})
+            LIMIT 1""", limpios * 2).fetchone()
+    conn.close()
+    return fila['id'] if fila else None
 
 
 def guardar_revista_externa(nombre, pais, institucion, sitio_url, issn_impreso,

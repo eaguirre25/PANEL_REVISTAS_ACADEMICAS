@@ -186,7 +186,7 @@ def construir_bienvenida(nombre, email, remitente):
     saludo = (f'<p style="font-size:17px;margin:0 0 6px;">'
               f'Hola{" " + escape(pila) if pila else ""},</p>'
               '<p style="margin:0 0 22px;color:#3d4552;">'
-              'Quedaste suscripto al resumen semanal de convocatorias. '
+              'Quedaste suscriptx al resumen semanal de convocatorias. '
               'Desde ahora te llega <b>todos los lunes</b>.</p>')
 
     cuerpo = f'''
@@ -336,10 +336,10 @@ def enviar_bienvenida(nombre, email):
         return False, "El correo no está configurado; no se envió confirmación."
     try:
         enviar(cfg, email,
-               "Ya estás suscripto · Panel de revistas académicas",
+               "Ya estás suscriptx · Panel de revistas académicas",
                construir_bienvenida(nombre, email, cfg['remitente']),
                f"Hola {_nombre_pila(nombre)},\n\n"
-               "Quedaste suscripto al resumen semanal de convocatorias a "
+               "Quedaste suscriptx al resumen semanal de convocatorias a "
                "dossier. Te llega todos los lunes.\n\n"
                "Panel completo: "
                "https://eaguirre25.github.io/PANEL_REVISTAS_ACADEMICAS/\n\n"

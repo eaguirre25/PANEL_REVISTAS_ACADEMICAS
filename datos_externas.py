@@ -442,5 +442,17 @@ REVISTAS = [
     ("Revista Latinoamericana de Metodología de la Investigación Social",
      "Argentina/regional", "CIES / Red Latinoamericana de Metodología",
      "http://www.relmis.com.ar/", "Latindex Catálogo / DOAJ / CLACSO / ERIH PLUS"),
+
+    # ───────────────────── incorporaciones posteriores ─────────────────────
+    ("Políticas Educativas (PolEd)", "Brasil",
+     "Asociación de Universidades Grupo Montevideo / UFRGS",
+     "https://seer.ufrgs.br/index.php/Poled", "Latindex / RCAAP / portal SEER"),
+    ("Revista Internacional de Educación para la Justicia Social", "España",
+     "Universidad Autónoma de Madrid / Red RINACE",
+     "https://revistas.uam.es/riejs", "Scopus / DOAJ / Latindex / ERIH PLUS"),
+    ("Cuadernos de la Facultad de Humanidades y Ciencias Sociales", "Argentina",
+     "Universidad Nacional de Jujuy",
+     "https://revistas.fhycs.unju.edu.ar/revistacuadernos/index.php/cuadernos",
+     "Latindex / DOAJ / Núcleo Básico"),
 ]
 

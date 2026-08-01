@@ -673,7 +673,7 @@ document.addEventListener('DOMContentLoaded',()=>{
           +'(No hace falta que escribas nada más: con enviar este correo alcanza.)');
       document.getElementById('susEstado').innerHTML =
         '<p class="susOk">Se abrió tu programa de correo con el mensaje ya '
-        +'escrito. <b>Enviálo</b> y quedás suscripto. Si no se abrió, escribí a '
+        +'escrito. <b>Enviálo</b> y quedás suscriptx. Si no se abrió, escribí a '
         +DIR+'.</p>';
     };
   }
@@ -865,7 +865,7 @@ def construir_gracias():
   <div class="b3"></div><div class="b4"></div></div>
 <div class="wrap"><div class="centro">
   <div class="tilde">✓</div>
-  <h1>Listo, ya estás suscripto</h1>
+  <h1>Listo, ya estás suscriptx</h1>
   <p>Te va a llegar un correo de confirmación en unos minutos, y a partir del
     <b>próximo lunes</b> el resumen semanal de convocatorias.</p>
   <p style="font-size:14.5px;color:var(--fg3);">Si no lo ves, revisá la carpeta
