@@ -86,6 +86,7 @@ def reunir_datos():
                COALESCE(origen,'NBRA') AS origen, institucion,
                issn_impreso, issn_online, sitio_url, ficha_url,
                nivel_conicet, en_scopus, scopus_estado, en_scielo, en_doaj,
+               COALESCE(wos_declarado,0) AS wos_declarado,
                recepcion_permanente, evidencia_permanente, estado_chequeo
         FROM revistas ORDER BY nombre""")]
 
@@ -104,7 +105,7 @@ def reunir_datos():
                COALESCE(c.es_dossier,0) AS es_dossier, c.tema,
                r.nombre AS revista, COALESCE(r.pais,'Argentina') AS pais,
                r.nivel_conicet, r.en_scopus, r.scopus_estado,
-               r.en_scielo, r.en_doaj
+               r.en_scielo, r.en_doaj, COALESCE(r.wos_declarado,0) AS wos_declarado
         FROM convocatorias c JOIN revistas r ON r.id = c.revista_id
         WHERE c.activa = 1
         ORDER BY c.fecha_cierre IS NULL, c.fecha_cierre""")]
@@ -214,8 +215,22 @@ h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;
   background-clip:text;color:transparent}
 .sub{margin:0 0 9px;color:var(--fg2);max-width:64ch;font-size:16px}
 .sub b{color:var(--fg)}
-.firma{margin:0 0 22px;color:var(--fg3);font-size:13.5px}
+.firma{margin:0 0 16px;color:var(--fg3);font-size:13.5px}
 .firma b{color:var(--fg)}
+/* Señalador de la última corrida automática. */
+.sello{display:inline-flex;align-items:center;gap:8px;background:var(--sup2);
+  border:1px solid var(--borde);border-radius:999px;padding:6px 15px;
+  font-size:13px;color:var(--fg2);margin:0 0 14px}
+.sello .punto{width:8px;height:8px;border-radius:50%;background:var(--a2);
+  box-shadow:0 0 0 3px rgba(5,150,105,.22);flex:none}
+.sello b{color:var(--fg)}
+/* Advertencia principal: es lo que evita que alguien confíe de más. */
+.ojo{border:2px solid #b45309;background:rgba(245,158,11,.10);
+  border-radius:14px;padding:15px 19px;margin:0 0 20px;max-width:74ch}
+.ojo b{color:#b45309;letter-spacing:.02em}
+.ojo p{margin:6px 0 0;color:var(--fg2);font-size:14.5px;line-height:1.55}
+:root[data-theme=dark] .ojo{border-color:#fcd34d;background:rgba(252,211,77,.10)}
+:root[data-theme=dark] .ojo b{color:#fcd34d}
 .firma a,.enlaces a,.tarj a,.rcard a{color:var(--a1);text-decoration:none;
   font-weight:650}
 .firma a:hover,.enlaces a:hover,.tarj a:hover,.rcard a:hover{
@@ -435,17 +450,30 @@ function esc(s){
 }
 function badges(r){
   const b=[];
-  if(r.nivel_conicet===1) b.push(['Nivel 1','#fef3c7','#a16207']);
-  else if(r.nivel_conicet===2) b.push(['Nivel 2','','']);
-  if(r.en_scopus) b.push([String(r.scopus_estado||'').toLowerCase()==='active'
-      ? 'Scopus' : 'Scopus ('+r.scopus_estado+')','#e0e7ff','#4338ca']);
-  if(r.en_scielo) b.push(['SciELO','#dcfce7','#15803d']);
-  if(r.en_doaj) b.push(['DOAJ','#fce7f3','#a21caf']);
+  if(r.nivel_conicet===1) b.push(['Nivel 1','#fef3c7','#a16207','']);
+  else if(r.nivel_conicet===2) b.push(['Nivel 2','','','']);
+  if(r.en_scopus){
+    const activa = String(r.scopus_estado||'').toLowerCase()==='active';
+    b.push([activa ? 'Scopus' : 'Scopus ('+r.scopus_estado+')',
+            '#e0e7ff','#4338ca','']);
+    // SCImago calcula el SJR sobre las fuentes de Scopus: estar en una
+    // equivale a estar en la otra. No es una verificación aparte.
+    b.push(['SciMago','#ede9fe','#6d28d9',
+            'SCImago indexa las revistas de Scopus: se deriva de ese dato']);
+  }
+  if(r.en_scielo) b.push(['SciELO','#dcfce7','#15803d','']);
+  if(r.en_doaj) b.push(['DOAJ','#fce7f3','#a21caf','']);
+  // WoS va aparte y con asterisco: la lista pública de Clarivate solo se
+  // consulta por una API interna que rechaza las peticiones externas, así que
+  // esto es lo que declara la fuente del listado, sin verificar.
+  if(r.wos_declarado) b.push(['WoS*','#fee2e2','#b91c1c',
+    'Declarado por la fuente del listado, sin verificar contra Clarivate']);
   return b;
 }
 function chip(b){
   const st = b[1] ? ' style="background:'+b[1]+';color:'+b[2]+'"' : '';
-  return '<span class="chip"'+st+'>'+esc(b[0])+'</span>';
+  const ti = b[3] ? ' title="'+esc(b[3])+'"' : '';
+  return '<span class="chip"'+st+ti+'>'+esc(b[0])+'</span>';
 }
 
 function tarjetaConv(c){
@@ -796,6 +824,8 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
 <header><div class="env">
   <div class="hcab">
     <div>
+      <p class="sello"><span class="punto"></span>
+        Última actualización automática: <b>{stats['generado']}</b></p>
       <h1>Panel de revistas académicas iberoamericanas</h1>
       <p class="sub">Convocatorias y llamados a dossier abiertos en
         <b>{stats['revistas']}</b> revistas de ciencias sociales y humanidades
@@ -803,6 +833,13 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
         de hoy.</p>
       <p class="firma">Desarrollado por <b>Elías Aguirre</b>. Comentarios,
         feedback y consultas a <a id="contacto" href="#">(escribir)</a>.</p>
+      <div class="ojo">
+        <b>¡IMPORTANTE! Chequeá e inspeccioná la información publicada.</b>
+        <p>La idea es facilitar —no reemplazar— la actividad propia de
+          búsqueda y revisión. Los datos se extraen automáticamente y pueden
+          estar incompletos o desactualizados: verificá siempre en el sitio de
+          la revista antes de preparar un envío.</p>
+      </div>
     </div>
     <button id="tema" title="Cambiar entre tema claro y oscuro"
             aria-label="Cambiar tema">◑</button>

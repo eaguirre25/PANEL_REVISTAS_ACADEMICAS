@@ -75,6 +75,10 @@ def init_db():
         # porque esta semana el sitio estuvo bloqueado: se muestra con la fecha
         # de su última verificación.
         ('ultima_revision_ok', 'TIMESTAMP'), ('metodo_revision', 'TEXT'),
+        # Web of Science declarado por la fuente del listado. NO verificado:
+        # la lista pública de Clarivate solo se consulta por una API interna
+        # que rechaza las peticiones externas.
+        ('wos_declarado', 'INTEGER DEFAULT 0'),
     ]
     for col, tipo in nuevas_rev:
         if col not in existentes:
@@ -89,6 +93,16 @@ def init_db():
                       ('sigue_recibiendo', 'INTEGER DEFAULT 0')]:
         if col not in cols_conv:
             c.execute(f"ALTER TABLE convocatorias ADD COLUMN {col} {tipo}")
+
+    # wos_declarado se deduce del texto que trajo el listado de origen.
+    c.execute("""UPDATE revistas SET wos_declarado = CASE
+                   WHEN indexacion_declarada LIKE '%WoS%'
+                     OR indexacion_declarada LIKE '%Web of Science%'
+                     OR indexacion_declarada LIKE '%SSCI%'
+                     OR indexacion_declarada LIKE '%AHCI%'
+                     OR indexacion_declarada LIKE '%ESCI%'
+                     OR indexacion_declarada LIKE '%ISI%'
+                   THEN 1 ELSE 0 END""")
 
     # Suscriptores del resumen semanal por correo.
     c.execute('''

@@ -81,8 +81,22 @@ h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;
   background-clip:text;color:transparent}
 .sub{margin:0 0 9px;color:var(--fg2);max-width:64ch;font-size:16px}
 .sub b{color:var(--fg)}
-.firma{margin:0 0 22px;color:var(--fg3);font-size:13.5px}
+.firma{margin:0 0 16px;color:var(--fg3);font-size:13.5px}
 .firma b{color:var(--fg)}
+/* Señalador de la última corrida automática. */
+.sello{display:inline-flex;align-items:center;gap:8px;background:var(--sup2);
+  border:1px solid var(--borde);border-radius:999px;padding:6px 15px;
+  font-size:13px;color:var(--fg2);margin:0 0 14px}
+.sello .punto{width:8px;height:8px;border-radius:50%;background:var(--a2);
+  box-shadow:0 0 0 3px rgba(5,150,105,.22);flex:none}
+.sello b{color:var(--fg)}
+/* Advertencia principal: es lo que evita que alguien confíe de más. */
+.ojo{border:2px solid #b45309;background:rgba(245,158,11,.10);
+  border-radius:14px;padding:15px 19px;margin:0 0 20px;max-width:74ch}
+.ojo b{color:#b45309;letter-spacing:.02em}
+.ojo p{margin:6px 0 0;color:var(--fg2);font-size:14.5px;line-height:1.55}
+:root[data-theme=dark] .ojo{border-color:#fcd34d;background:rgba(252,211,77,.10)}
+:root[data-theme=dark] .ojo b{color:#fcd34d}
 .firma a,.enlaces a,.tarj a,.rcard a{color:var(--a1);text-decoration:none;
   font-weight:650}
 .firma a:hover,.enlaces a:hover,.tarj a:hover,.rcard a:hover{

@@ -13,6 +13,7 @@ from indizacion import actualizar_indizacion
 from permanentes import detectar_permanentes
 from externas import importar as importar_externas
 from manuales import cargar as cargar_manuales
+from latinrev import cosechar as cosechar_latinrev
 
 logging.basicConfig(
     level=logging.INFO,
@@ -45,6 +46,15 @@ def actualizar_todo():
     perm = detectar_permanentes()
     logger.info("Recepción permanente: %s revistas de %s revisadas",
                 perm['permanentes'], perm['revisadas'])
+
+    # LatinREV agrega convocatorias que no están en la página de anuncios de
+    # cada revista. Si el sitio no responde, se informa y se sigue.
+    lat = cosechar_latinrev()
+    if lat['disponible']:
+        logger.info("LatinREV: %s convocatorias (%s nuevas, %s revistas nuevas)",
+                    lat['convocatorias'], lat['nuevas'], lat['revistas_nuevas'])
+    else:
+        logger.warning("LatinREV sin datos: %s", lat['motivo'])
 
     # Después del rastreo: lo verificado a mano no se pierde y pisa lo que el
     # rastreador no pudo leer (sitios con anti-bot, convocatorias en PDF).
