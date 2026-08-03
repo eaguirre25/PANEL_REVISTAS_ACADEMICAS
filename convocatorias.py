@@ -232,13 +232,53 @@ SELECTORES_ANUNCIO = ('.obj_announcement_summary, .announcement-summary, '
                       '.announcements .media, li.announcement')
 
 
+def anuncios_por_enlace(soup, url_base):
+    """
+    Anuncios ubicados por su enlace a la ficha, no por la clase del contenedor.
+
+    Todo OJS enlaza cada aviso como /announcement/view/N. Ese patrón es parte
+    de la aplicación y no del tema visual, así que funciona en cualquier
+    portal. Buscar clases CSS, en cambio, falla cada vez que aparece un tema
+    nuevo: así se perdieron los dossiers de las 32 revistas de un portal que
+    usaba .announcement-summary en lugar de .obj_announcement_summary.
+
+    Idea aportada por Elías Aguirre.
+    """
+    from urllib.parse import urljoin
+    anuncios, vistos = [], set()
+
+    for a in soup.select("a[href*='/announcement/view/']"):
+        href = a.get('href')
+        if not href:
+            continue
+        url = urljoin(url_base, href)
+        if url in vistos:
+            continue
+        vistos.add(url)
+
+        titulo = ' '.join(a.stripped_strings).strip()
+        if not titulo or len(titulo) < 12:
+            continue
+
+        # El contenedor del aviso: el ancestro que agrupa título y cuerpo.
+        cont = a.find_parent(['article', 'li', 'div'])
+        cuerpo = (' '.join(cont.stripped_strings) if cont else titulo)
+        anuncios.append((titulo, re.sub(r'\s+', ' ', cuerpo), url))
+
+    return anuncios
+
+
 def parsear_anuncios(html, url_base):
     """Extrae [(titulo, descripcion, url), ...] de la página de anuncios de OJS."""
     soup = BeautifulSoup(html, 'html.parser')
     for t in soup(['script', 'style', 'nav', 'footer', 'header']):
         t.decompose()
 
-    anuncios = []
+    # Primero por enlace, que no depende del tema.
+    anuncios = anuncios_por_enlace(soup, url_base)
+    if anuncios:
+        return anuncios
+
     bloques = soup.select(SELECTORES_ANUNCIO)
 
     for b in bloques:

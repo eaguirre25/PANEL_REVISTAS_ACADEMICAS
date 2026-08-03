@@ -42,3 +42,6 @@ Thumbs.db
 
 # Perfil de Chrome del navegador asistido: cookies y sesion.
 perfil-revistas/
+
+# Capturas y HTML que deja el navegador cuando una pagina no se libera.
+diagnostico/

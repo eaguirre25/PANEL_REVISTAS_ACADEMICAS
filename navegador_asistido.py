@@ -42,9 +42,16 @@ logger = logging.getLogger(__name__)
 BASE = os.path.dirname(os.path.abspath(__file__))
 PERFIL = os.path.join(BASE, 'perfil-revistas')
 
+# Marcas de que la página no es la real sino el muro de verificación.
+# «/.within.website/» es la ruta que sirve el desafío de Anubis y aparece en
+# la URL aunque el cuerpo no diga nada reconocible.
 DESAFIO = re.compile(
-    r"making sure you're not a bot|anubis|just a moment|checking your browser|"
-    r"verificando que|cf-browser-verification|captcha", re.I)
+    r"making sure you're not a bot|anubis|sad anubis|just a moment|"
+    r"checking your browser|verificando (que|acceso)|access denied|"
+    r"cf-browser-verification|captcha|/\.within\.website/", re.I)
+
+# Espera máxima, por página, a que el desafío se resuelva solo.
+ESPERA_PAGINA = 45
 
 ESPERA_ENTRE_PAGINAS = 2.5   # segundos, para no golpear el servidor
 ESPERA_DESAFIO = 60          # segundos que se le dan a la persona para resolver
@@ -79,15 +86,88 @@ def _texto_visible(page):
 
 
 def _hay_desafio(page):
+    """El desafío puede delatarse en el cuerpo o en la URL."""
+    try:
+        url = page.url or ''
+    except Exception:
+        url = ''
+    if '/.within.website/' in url:
+        return True
     return bool(DESAFIO.search(_texto_visible(page)[:3000]))
 
 
-def _extraer_anuncios(page, url):
-    """Anuncios de la página ya cargada, con la misma lógica que el rastreador."""
-    anuncios = []
+def _esperar_liberacion(page, segundos=ESPERA_PAGINA):
+    """
+    Espera a que el desafío se resuelva solo. El JavaScript de Anubis calcula
+    una prueba de trabajo cuyo tiempo depende de la máquina y de la dificultad
+    configurada; una espera fija se queda corta unas veces y sobra otras.
+    Devuelve True si la página quedó accesible.
+    """
+    limite = time.time() + segundos
+    while time.time() < limite:
+        if not _hay_desafio(page):
+            return True
+        page.wait_for_timeout(1000)
+    return not _hay_desafio(page)
+
+
+def _guardar_diagnostico(page, nombre):
+    """
+    Deja captura y HTML cuando una página no se libera. Sin esto, un fallo
+    solo dice «protegido» y no hay forma de saber si cambió el desafío, si
+    apareció un CAPTCHA nuevo o si el sitio simplemente estaba caído.
+    """
+    carpeta = os.path.join(BASE, 'diagnostico')
+    os.makedirs(carpeta, exist_ok=True)
+    seguro = re.sub(r'[^\w.-]+', '_', nombre)[:60]
     try:
-        bloques = page.query_selector_all(SELECTORES_ANUNCIO)
-        for b in bloques:
+        page.screenshot(path=os.path.join(carpeta, f"{seguro}.png"),
+                        full_page=True)
+        with open(os.path.join(carpeta, f"{seguro}.html"), 'w',
+                  encoding='utf-8') as f:
+            f.write(page.content())
+        logger.info("  diagnóstico guardado en diagnostico/%s.png", seguro)
+    except Exception:
+        pass
+
+
+def _extraer_anuncios(page, url):
+    """
+    Anuncios de la página ya cargada.
+
+    Primero por el enlace a la ficha (/announcement/view/N), que es parte de
+    OJS y no del tema visual, así que funciona en cualquier portal. Las clases
+    CSS quedan como respaldo: cada tema nuevo las cambia.
+    """
+    from urllib.parse import urljoin
+    anuncios, vistos = [], set()
+    try:
+        for a in page.query_selector_all("a[href*='/announcement/view/']"):
+            href = a.get_attribute('href')
+            if not href:
+                continue
+            destino = urljoin(url, href)
+            if destino in vistos:
+                continue
+            vistos.add(destino)
+            titulo = (a.inner_text() or '').strip()
+            if not titulo or len(titulo) < 12:
+                continue
+            cont = a.evaluate_handle(
+                "e => e.closest('article, li, .obj_announcement_summary, "
+                ".announcement-summary, div')")
+            cuerpo = titulo
+            try:
+                el = cont.as_element()
+                if el:
+                    cuerpo = re.sub(r'\s+', ' ', el.inner_text())
+            except Exception:
+                pass
+            anuncios.append((titulo, cuerpo, destino))
+        if anuncios:
+            return anuncios
+
+        for b in page.query_selector_all(SELECTORES_ANUNCIO):
             enc = b.query_selector('h2, h3, h4, h5')
             titulo = (enc.inner_text().strip() if enc else '')
             if not titulo:
@@ -95,7 +175,7 @@ def _extraer_anuncios(page, url):
             cuerpo = re.sub(r'\s+', ' ', b.inner_text())
             a = b.query_selector('a[href]')
             enlace = a.get_attribute('href') if a else url
-            anuncios.append((titulo, cuerpo, enlace or url))
+            anuncios.append((titulo, cuerpo, urljoin(url, enlace or url)))
     except Exception as e:
         logger.warning("No se pudieron leer los anuncios de %s: %s", url, e)
     return anuncios
@@ -110,7 +190,10 @@ def _procesar_revista(page, rv):
     except Exception as e:
         return f'inaccesible: {_motivo(e)}', [], None
 
-    if _hay_desafio(page):
+    # El desafío puede tardar: se le da tiempo a que se resuelva solo antes de
+    # darlo por perdido.
+    if _hay_desafio(page) and not _esperar_liberacion(page):
+        _guardar_diagnostico(page, rv['nombre'])
         return 'desafio', [], None
     if '/login' in page.url.lower():
         return 'requiere login', [], None
@@ -230,12 +313,11 @@ def revisar(dominios=None, espera_desafio=ESPERA_DESAFIO, progreso=None,
 
                 if _hay_desafio(page):
                     logger.warning(
-                        "  VERIFICACIÓN PENDIENTE en %s — resolvela en la "
-                        "ventana. Esperando hasta %ds...", dominio, espera_desafio)
-                    limite = time.time() + espera_desafio
-                    while time.time() < limite and _hay_desafio(page):
-                        time.sleep(2)
-                    if _hay_desafio(page):
+                        "  VERIFICACIÓN PENDIENTE en %s — si pide algo, "
+                        "resolvelo en la ventana. Esperando hasta %ds...",
+                        dominio, espera_desafio)
+                    if not _esperar_liberacion(page, espera_desafio):
+                        _guardar_diagnostico(page, f"dominio_{dominio}")
                         logger.warning("  sin resolver; se saltea %s", dominio)
                         resumen['pendientes'].append(
                             f"{dominio}: verificación sin resolver "
