@@ -300,6 +300,15 @@ h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;
 .acota.suelta{margin:10px 0 0;font-size:13px;color:var(--fg3);line-height:1.55;
   max-width:78ch;background:var(--bg2);border-radius:9px;padding:11px 14px}
 .acota.suelta b{color:var(--fg)}
+/* Desglose del catálogo, en Cobertura: cada línea explica qué significa esa
+   categoría, que en una caja de dos palabras no entra. */
+.desglose{display:grid;gap:2px;margin-bottom:18px}
+.dl{display:grid;grid-template-columns:66px 1fr;gap:12px;align-items:baseline;
+  padding:9px 11px;border-radius:8px;cursor:pointer}
+.dl:hover{background:var(--bg2)}
+.dl b{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-size:19px;
+  text-align:right;font-variant-numeric:tabular-nums}
+.dl span{color:var(--fg2);font-size:13.5px;line-height:1.5}
 .stats2{margin:12px 0 0;display:flex;gap:2px;flex-wrap:wrap;color:var(--fg3);
   font-size:13px;align-items:center}
 .stats2 button{background:none;border:0;font-family:inherit;font-size:13px;
@@ -854,6 +863,9 @@ document.addEventListener('DOMContentLoaded',()=>{
     b.onclick=()=>cambiarSeccion(b));
   document.querySelectorAll('.st, .stats2 button').forEach(b=>
     b.onclick=()=>irA(b.dataset.sec, b.dataset.f));
+  // Las líneas del desglose filtran la tabla igual que las cajas.
+  document.querySelectorAll('.dl').forEach(b=>
+    b.onclick=()=>irA('rev', b.dataset.f));
   document.getElementById('q').oninput=pinta;
   document.getElementById('fPais').onchange=pinta;
   document.getElementById('fOrden').onchange=pinta;
@@ -971,50 +983,21 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
     <button id="tema" title="Cambiar entre tema claro y oscuro"
             aria-label="Cambiar tema">◑</button>
   </div>
-  <p class="rotulo">Convocatorias</p>
   <div class="stats">
     <button class="st urg" data-sec="conv" data-f="urgente">
       <b id="stUrg">–</b><span>cierran en 7 días</span></button>
     <button class="st" data-sec="conv" data-f="*">
-      <b>{stats['convocatorias']}</b><span>abiertas</span></button>
+      <b>{stats['convocatorias']}</b><span>convocatorias abiertas</span></button>
     <button class="st" data-sec="conv" data-f="dossier">
       <b>{stats['dossiers']}</b><span>son dossiers</span></button>
     <button class="st" data-sec="perm" data-f="*">
       <b>{stats['permanentes']}</b><span>revistas abiertas todo el año</span></button>
     <button class="st" data-sec="cerr" data-f="*">
       <b>{stats['cerradas']}</b><span>cerradas hace poco</span></button>
-  </div>
-
-  <p class="rotulo">Revistas en el catálogo · <b>{stats['revistas']}</b>
-    <span class="acota">las cinco cifras siguientes son excluyentes entre sí
-      y suman ese total</span></p>
-  <div class="stats">
-    <button class="st ok" data-sec="rev" data-f="conconv"
-       title="Tienen al menos una convocatoria abierta en este momento">
-      <b>{stats['rev_con_conv']}</b><span>tienen convocatoria abierta</span></button>
-    <button class="st" data-sec="rev" data-f="sinconv"
-       title="Se leyó su página de avisos y en este momento no hay ninguna convocatoria vigente. Pueden abrir una más adelante.">
-      <b>{stats['rev_sin_conv']}</b><span>se leyeron y hoy no tienen ninguna</span></button>
-    <button class="st" data-sec="rev" data-f="sinpagina"
-       title="Su plataforma no tiene sección de avisos, así que difunden las convocatorias por otras vías: la portada, redes o un PDF.">
-      <b>{stats['rev_sin_pagina']}</b><span>no publican avisos en su sitio</span></button>
     <button class="st man" data-sec="rev" data-f="manual"
-       title="Su servidor no responde, cambió de dirección o exige registrarse">
-      <b>{stats['revision_manual']}</b><span>no se pudieron leer</span></button>
-    <button class="st" data-sec="rev" data-f="sinrevisar"
-       title="Tienen dirección pero el rastreador todavía no pasó: se incorporaron después de la última corrida">
-      <b>{stats['rev_sin_revisar']}</b><span>pendientes de la próxima corrida</span></button>
-    <button class="st ref" data-sec="rev" data-f="referencia"
-       title="Están en el catálogo con su indización, pero no tenemos su dirección para seguirlas">
-      <b>{stats['solo_referencia']}</b><span>sin dirección conocida</span></button>
+       title="Su servidor no responde, cambió de dirección o exige registrarse. Si tienen convocatoria abierta, no figura acá.">
+      <b>{stats['revision_manual']}</b><span>revistas que requieren revisión manual</span></button>
   </div>
-  <p class="acota suelta">
-    <b>Qué significan:</b> el rastreador entra cada semana a la página de avisos
-    de cada revista. «Se leyeron y hoy no tienen ninguna» son las que abrió y
-    encontró vacías —pueden publicar una convocatoria la semana que viene—.
-    «No publican avisos en su sitio» son las que directamente no tienen esa
-    sección: difunden sus llamados por la portada, redes o un PDF, y ahí el
-    panel no llega.</p>
 
   <p class="rotulo">SCImago · <b>{stats['con_sjr']}</b> revistas con SJR
     <span class="acota">los cuartiles reparten ese total</span></p>
@@ -1075,6 +1058,30 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
 
   <div class="cobertura oculto" id="cobertura">
     <h3>Qué se pudo revisar y qué no</h3>
+    <p style="margin:0 0 14px;color:var(--fg2);font-size:14px;max-width:76ch;">
+      El rastreador entra cada semana a la página de avisos de cada revista.
+      Estas seis categorías son excluyentes y suman las
+      <b>{stats['revistas']}</b> del catálogo.</p>
+
+    <div class="desglose">
+      <div class="dl" data-f="conconv"><b>{stats['rev_con_conv']}</b>
+        <span>tienen convocatoria abierta</span></div>
+      <div class="dl" data-f="sinconv"><b>{stats['rev_sin_conv']}</b>
+        <span>se leyeron y hoy no tienen ninguna &mdash; pueden publicar una
+          la semana que viene</span></div>
+      <div class="dl" data-f="sinpagina"><b>{stats['rev_sin_pagina']}</b>
+        <span>no tienen sección de avisos: difunden sus llamados por la
+          portada, redes o un PDF, y ahí el panel no llega</span></div>
+      <div class="dl" data-f="manual"><b>{stats['revision_manual']}</b>
+        <span>no se pudieron leer: su servidor no responde, cambió de
+          dirección o exige registrarse</span></div>
+      <div class="dl" data-f="sinrevisar"><b>{stats['rev_sin_revisar']}</b>
+        <span>tienen dirección pero el rastreador todavía no pasó</span></div>
+      <div class="dl" data-f="referencia"><b>{stats['solo_referencia']}</b>
+        <span>sin dirección conocida: están con su indización, pero no se
+          pueden seguir</span></div>
+    </div>
+
     <div class="barra" id="barra"></div>
     <div class="leyenda" id="leyenda"></div>
   </div>
