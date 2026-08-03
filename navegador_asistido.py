@@ -32,7 +32,9 @@ from database import (init_db, revistas_bloqueadas, guardar_convocatoria,
                       marcar_chequeo, marcar_recepcion_permanente,
                       registrar_actualizacion)
 from convocatorias import (PALABRAS_CLAVE, ES_DOSSIER, extraer_tema,
-                           extraer_fecha, parece_vieja, base_ojs)
+                           extraer_fecha, parece_vieja, base_ojs,
+                           extraer_reapertura, sigue_recibiendo,
+                           SELECTORES_ANUNCIO)
 from permanentes import analizar as analizar_permanente
 
 logger = logging.getLogger(__name__)
@@ -84,8 +86,7 @@ def _extraer_anuncios(page, url):
     """Anuncios de la página ya cargada, con la misma lógica que el rastreador."""
     anuncios = []
     try:
-        bloques = page.query_selector_all(
-            '.obj_announcement_summary, .announcement, article.announcement')
+        bloques = page.query_selector_all(SELECTORES_ANUNCIO)
         for b in bloques:
             enc = b.query_selector('h2, h3, h4, h5')
             titulo = (enc.inner_text().strip() if enc else '')
@@ -124,7 +125,9 @@ def _procesar_revista(page, rv):
             titulo=titulo[:250], descripcion=re.sub(r'\s+', ' ', cuerpo)[:600],
             fecha_cierre=fecha, url=enlace,
             es_dossier=1 if dossier else 0,
-            tema=extraer_tema(titulo, cuerpo) if dossier else None))
+            tema=extraer_tema(titulo, cuerpo) if dossier else None,
+            fecha_reapertura=extraer_reapertura(cuerpo),
+            sigue_recibiendo=1 if sigue_recibiendo(cuerpo) else 0))
 
     # De paso, la página de envíos: si declara recepción permanente, se anota.
     permanente = None
@@ -141,18 +144,46 @@ def _procesar_revista(page, rv):
     return ('ok' if encontradas else 'sin convocatorias'), encontradas, permanente
 
 
-def revisar(dominios=None, espera_desafio=ESPERA_DESAFIO, progreso=None):
+def _todas_del_dominio(dominios):
+    """Todas las revistas de esos dominios, sin importar su último estado."""
+    import re as _re
+    from collections import OrderedDict
+    from database import conectar
+    conn = conectar()
+    filas = conn.execute(
+        """SELECT id, nombre, sitio_url, estado_chequeo, ultima_revision_ok
+           FROM revistas WHERE COALESCE(sitio_url,'') != '' ORDER BY nombre"""
+    ).fetchall()
+    conn.close()
+    por_dominio = OrderedDict()
+    for f in filas:
+        m = _re.match(r'https?://([^/]+)', f['sitio_url'] or '')
+        dom = m.group(1).lower() if m else '(sin dominio)'
+        if dom in dominios:
+            por_dominio.setdefault(dom, []).append(dict(f))
+    return por_dominio
+
+
+def revisar(dominios=None, espera_desafio=ESPERA_DESAFIO, progreso=None,
+            forzar=False):
     """
     Recorre las revistas bloqueadas con el navegador asistido.
 
     `dominios`: lista opcional para limitar a algunos. Sin ella, todos.
+    `forzar`  : revisa todas las revistas de esos dominios, no solo las que
+                quedaron pendientes. Sirve tras corregir la extracción: una
+                revista leída con selectores viejos figura como «sin
+                convocatorias» y sale de la cola, aunque tenga dossiers.
     """
     from playwright.sync_api import sync_playwright
 
     init_db()
-    cola = revistas_bloqueadas()
-    if dominios:
-        cola = {d: v for d, v in cola.items() if d in dominios}
+    if forzar and dominios:
+        cola = _todas_del_dominio(set(dominios))
+    else:
+        cola = revistas_bloqueadas()
+        if dominios:
+            cola = {d: v for d, v in cola.items() if d in dominios}
     if not cola:
         logger.info("No hay revistas pendientes.")
         return dict(dominios=0, revisadas=0, convocatorias=0, nuevas=0,
@@ -236,7 +267,9 @@ def revisar(dominios=None, espera_desafio=ESPERA_DESAFIO, progreso=None):
                                 rv['id'], c['titulo'], c['descripcion'],
                                 c['fecha_cierre'], c['url'],
                                 'navegador asistido', es_dossier=c['es_dossier'],
-                                tema=c['tema']):
+                                tema=c['tema'],
+                                fecha_reapertura=c['fecha_reapertura'],
+                                sigue_recibiendo=c['sigue_recibiendo']):
                             resumen['nuevas'] += 1
                     if permanente:
                         marcar_recepcion_permanente(rv['id'], True, permanente)
@@ -284,7 +317,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     doms = [a for a in sys.argv[1:] if not a.startswith('--')]
-    r = revisar(dominios=doms or None,
+    r = revisar(dominios=doms or None, forzar='--forzar' in sys.argv,
                 progreso=lambda i, t, n: print(f"  [{i}/{t}] {n[:52]}", flush=True))
     print("\nRESUMEN")
     for k in ('dominios', 'revisadas', 'convocatorias', 'nuevas', 'permanentes'):

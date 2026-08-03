@@ -222,6 +222,16 @@ def extraer_tema(titulo, descripcion):
     return None
 
 
+# Cada tema de OJS nombra distinto el bloque de un aviso. El tema por defecto
+# usa .obj_announcement_summary; otros muy difundidos —el de revistas.unc.edu.ar,
+# que aloja 32 revistas— usan .announcement-summary, con guion. Buscar solo el
+# primero hacía que esas revistas figuraran como «sin convocatorias» teniendo
+# dossiers publicados.
+SELECTORES_ANUNCIO = ('.obj_announcement_summary, .announcement-summary, '
+                      '.announcement, article.announcement, '
+                      '.announcements .media, li.announcement')
+
+
 def parsear_anuncios(html, url_base):
     """Extrae [(titulo, descripcion, url), ...] de la página de anuncios de OJS."""
     soup = BeautifulSoup(html, 'html.parser')
@@ -229,9 +239,7 @@ def parsear_anuncios(html, url_base):
         t.decompose()
 
     anuncios = []
-
-    # OJS 3: cada anuncio es un .obj_announcement_summary
-    bloques = soup.select('.obj_announcement_summary, .announcement, article.announcement')
+    bloques = soup.select(SELECTORES_ANUNCIO)
 
     for b in bloques:
         enc = b.find(['h2', 'h3', 'h4', 'h5'])
