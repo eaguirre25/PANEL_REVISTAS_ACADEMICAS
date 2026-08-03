@@ -2,6 +2,16 @@ name: Actualizar datos y publicar sitio
 
 # Corre todos los lunes a las 09:00 UTC (06:00 en Argentina) y también a mano
 # desde la pestaña Actions. No depende de que ninguna computadora esté prendida.
+#
+# IMPORTANTE: esta corrida reconstruye la base desde cero, así que solo arma lo
+# que sea reproducible desde el repositorio y desde la red. Lo que se obtiene
+# con el navegador asistido —las revistas cuyo sitio pide resolver una
+# verificación— no puede reproducirse acá: hace falta un navegador real. Esas
+# convocatorias viven en la base local y llegan al sitio cuando se publica
+# desde la máquina de trabajo con publicar.bat.
+#
+# Por eso el paso «Verificar que no se pierdan datos» aborta la publicación si
+# la reconstrucción sale mucho más pobre que lo ya publicado.
 on:
   schedule:
     - cron: '0 9 * * 1'
@@ -17,7 +27,7 @@ concurrency:
 jobs:
   actualizar:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
 
     steps:
       - uses: actions/checkout@v4
@@ -35,13 +45,13 @@ jobs:
       - name: Recuperar la lista de Scopus del caché
         uses: actions/cache@v4
         with:
-          path: datos/
+          path: datos/scopus_source_list.xlsx
           key: scopus-${{ github.run_month || 'v1' }}
           restore-keys: scopus-
 
-      # Reconstruye la base desde cero. Cada paso puede fallar sin tumbar la
-      # corrida: si un sitio se cae, preferimos publicar datos parciales antes
-      # que no publicar nada.
+      # ── Catálogo ──────────────────────────────────────────────────────
+      # Cada paso puede fallar sin tumbar la corrida: si un sitio se cae,
+      # preferimos publicar datos parciales antes que no publicar nada.
       - name: Catálogo del Núcleo Básico
         run: python catalogo.py
         continue-on-error: true
@@ -50,6 +60,23 @@ jobs:
         run: python externas.py
         continue-on-error: true
 
+      - name: Ranking SCImago (SJR y cuartiles)
+        run: python scimago.py
+        continue-on-error: true
+
+      - name: Nombres y sitios del relevamiento
+        run: python enriquecer_docx.py
+        continue-on-error: true
+
+      - name: Sitios verificados
+        run: python sitios_verificados.py
+        continue-on-error: true
+
+      - name: Fusionar revistas duplicadas
+        run: python fusionar_duplicados.py
+        continue-on-error: true
+
+      # ── Convocatorias ─────────────────────────────────────────────────
       - name: Buscar convocatorias
         run: python convocatorias.py
         continue-on-error: true
@@ -58,6 +85,20 @@ jobs:
         run: python permanentes.py
         continue-on-error: true
 
+      - name: Convocatorias de LatinREV
+        run: python latinrev.py
+        continue-on-error: true
+
+      # Lo verificado a mano va después del rastreo, para que no lo pise.
+      - name: Cargar datos verificados a mano
+        run: python manuales.py
+        continue-on-error: true
+
+      - name: Recalcular temas y reaperturas
+        run: python recalcular_temas.py
+        continue-on-error: true
+
+      # ── Indización ────────────────────────────────────────────────────
       - name: Verificar indización
         run: python indizacion.py
         continue-on-error: true
@@ -68,8 +109,31 @@ jobs:
         run: python resolver_issn.py
         continue-on-error: true
 
+      # ── Publicación ───────────────────────────────────────────────────
       - name: Generar el sitio
         run: python generar_sitio.py
+
+      # Guarda contra el problema que motivó este paso: una corrida reconstruyó
+      # el catálogo sin las fuentes locales y publicó 510 revistas donde había
+      # 994. Si la reconstrucción sale mucho más pobre que lo ya publicado, no
+      # se pisa: es preferible dejar el sitio como estaba.
+      - name: Verificar que no se pierdan datos
+        run: |
+          python - <<'PY'
+          import json, subprocess, sys
+          nuevo = json.load(open('docs/datos.json', encoding='utf-8'))
+          crudo = subprocess.run(['git', 'show', 'HEAD:docs/datos.json'],
+                                 capture_output=True, text=True,
+                                 encoding='utf-8').stdout or '{}'
+          previo = json.loads(crudo)
+          a = (previo.get('estadisticas') or {}).get('revistas', 0)
+          b = (nuevo.get('estadisticas') or {}).get('revistas', 0)
+          print(f'revistas: publicadas {a} -> reconstruidas {b}')
+          if a and b < a * 0.9:
+              print(f'ABORTA: la reconstruccion pierde {a-b} revistas '
+                    f'({(1-b/a)*100:.0f}%). No se publica.')
+              sys.exit(1)
+          PY
 
       - name: Publicar si hubo cambios
         run: |

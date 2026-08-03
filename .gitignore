@@ -7,9 +7,14 @@ config_local.json
 revistas.db
 
 # ─── Datos descargados de terceros ───
-# scopus_source_list.xlsx es la lista de fuentes de Elsevier (~26 MB).
-# No se redistribuye: indizacion.py la descarga sola en la primera ejecución.
-datos/
+# Se versionan las fuentes chicas que el panel necesita para reconstruirse
+# (rankings de SCImago, relevamientos de sitios): sin ellas, el robot de
+# GitHub Actions arma un catálogo incompleto.
+# Queda afuera scopus_source_list.xlsx, que son ~26 MB de Elsevier y no se
+# redistribuye: indizacion.py lo descarga solo.
+datos/*
+!datos/*.csv
+!datos/*.docx
 
 # ─── Salidas generadas ───
 informes/

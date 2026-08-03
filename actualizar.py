@@ -66,6 +66,14 @@ def actualizar_todo():
     logger.info("Indización: Nivel 1 %s, Nivel 2 %s | Scopus %s, SciELO %s, DOAJ %s",
                 ind['nivel1'], ind['nivel2'], ind['scopus'], ind['scielo'], ind['doaj'])
 
+    # El sitio se regenera acá, con la base local, que es la más completa:
+    # tiene lo que el robot de GitHub no puede conseguir. Para publicarlo hay
+    # que correr publicar.bat, que además hace el push.
+    from generar_sitio import generar
+    ruta_sitio, stats_sitio, _, _ = generar()
+    logger.info("Sitio regenerado: %s revistas, %s convocatorias",
+                stats_sitio['revistas'], stats_sitio['convocatorias'])
+
     # El boletín va último: necesita los datos ya actualizados.
     bol = enviar_boletin()
     logger.info("Boletín: informe %s; %s correo(s) enviado(s)%s",
