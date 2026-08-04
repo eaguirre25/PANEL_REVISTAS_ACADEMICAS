@@ -20,6 +20,13 @@
   --sombra:0 6px 20px rgba(15,23,42,.06);
   --sombraAlta:0 16px 40px rgba(8,145,178,.28);
   --op:.30;
+  /* Colores de señal. Van como variables y no como reglas sueltas porque el
+     tema oscuro llega por dos caminos —el interruptor y la preferencia del
+     sistema— y una regla escrita solo para [data-theme=dark] deja sin
+     corregir a quien nunca toca el interruptor, que son casi todos. */
+  --amb:#b45309; --rojoTxt:#b91c1c; --verdeTxt:#047857; --violTxt:#6d28d9;
+  --markBg:rgba(8,145,178,.22);
+  --ojoBg:rgba(245,158,11,.10); --reabreBg:rgba(21,128,61,.10);
 }
 :root[data-theme=dark]{
   --a1:#22d3ee; --a2:#34d399; --a3:#a78bfa;
@@ -30,6 +37,9 @@
   --sombra:0 6px 20px rgba(0,0,0,.35);
   --sombraAlta:0 16px 40px rgba(0,0,0,.5);
   --op:.20;
+  --amb:#fcd34d; --rojoTxt:#fca5a5; --verdeTxt:#6ee7a0; --violTxt:#c4b5fd;
+  --markBg:rgba(34,211,238,.26);
+  --ojoBg:rgba(252,211,77,.10); --reabreBg:rgba(110,231,160,.10);
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme=light]){
@@ -41,6 +51,9 @@
     --sombra:0 6px 20px rgba(0,0,0,.35);
     --sombraAlta:0 16px 40px rgba(0,0,0,.5);
     --op:.20;
+    --amb:#fcd34d; --rojoTxt:#fca5a5; --verdeTxt:#6ee7a0; --violTxt:#c4b5fd;
+    --markBg:rgba(34,211,238,.26);
+    --ojoBg:rgba(252,211,77,.10); --reabreBg:rgba(110,231,160,.10);
   }
 }
 
@@ -91,12 +104,10 @@ h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;
   box-shadow:0 0 0 3px rgba(5,150,105,.22);flex:none}
 .sello b{color:var(--fg)}
 /* Advertencia principal: es lo que evita que alguien confíe de más. */
-.ojo{border:2px solid #b45309;background:rgba(245,158,11,.10);
+.ojo{border:2px solid var(--amb);background:var(--ojoBg);
   border-radius:14px;padding:15px 19px;margin:0 0 20px;max-width:74ch}
-.ojo b{color:#b45309;letter-spacing:.02em}
+.ojo b{color:var(--amb);letter-spacing:.02em}
 .ojo p{margin:6px 0 0;color:var(--fg2);font-size:14.5px;line-height:1.55}
-:root[data-theme=dark] .ojo{border-color:#fcd34d;background:rgba(252,211,77,.10)}
-:root[data-theme=dark] .ojo b{color:#fcd34d}
 .firma a,.enlaces a,.tarj a,.rcard a{color:var(--a1);text-decoration:none;
   font-weight:650}
 .firma a:hover,.enlaces a:hover,.tarj a:hover,.rcard a:hover{
@@ -115,14 +126,11 @@ h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;
   font-size:25px;letter-spacing:-.02em;color:var(--fg)}
 .st span{color:var(--fg3);font-size:12.5px}
 .st.urg{background:rgba(220,38,38,.09);border-color:rgba(220,38,38,.35)}
-.st.urg b,.st.urg span{color:#dc2626}
-:root[data-theme=dark] .st.urg b,:root[data-theme=dark] .st.urg span{color:#fca5a5}
+.st.urg b,.st.urg span{color:var(--rojoTxt)}
 .st.man{background:rgba(180,83,9,.1);border-color:rgba(180,83,9,.32)}
-.st.man b,.st.man span{color:#b45309}
-:root[data-theme=dark] .st.man b,:root[data-theme=dark] .st.man span{color:#fcd34d}
+.st.man b,.st.man span{color:var(--amb)}
 .st.ok{background:rgba(5,150,105,.10);border-color:rgba(5,150,105,.30)}
-.st.ok b,.st.ok span{color:#047857}
-:root[data-theme=dark] .st.ok b,:root[data-theme=dark] .st.ok span{color:#6ee7a0}
+.st.ok b,.st.ok span{color:var(--verdeTxt)}
 .st.ref{background:var(--chip);border-color:transparent;opacity:.85}
 /* Rótulo que dice qué unidad cuenta el grupo de abajo: sin esto las cajas de
    convocatorias y las de revistas se leen como una sola serie sumable. */
@@ -177,12 +185,10 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--a1);
 main{padding:24px 0 80px}
 .conteo{color:var(--fg3);font-size:13.5px;margin:0 0 12px}
 .urgente{background:rgba(220,38,38,.09);border:1px solid rgba(220,38,38,.35);
-  border-radius:14px;padding:14px 18px;margin-bottom:18px;color:#b91c1c;
+  border-radius:14px;padding:14px 18px;margin-bottom:18px;color:var(--rojoTxt);
   font-weight:650;font-size:15px}
-:root[data-theme=dark] .urgente{color:#fca5a5}
 .urgente.man{background:rgba(180,83,9,.1);border-color:rgba(180,83,9,.32);
-  color:#92400e;font-weight:400}
-:root[data-theme=dark] .urgente.man{color:#fcd34d}
+  color:var(--amb);font-weight:400}
 .grupo{margin:28px 0 12px;display:flex;align-items:baseline;gap:10px}
 .grupo h2{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;
   color:var(--fg3);font-weight:700;
@@ -227,9 +233,8 @@ a.cal:hover{color:var(--a1)!important;border-color:var(--a1);
   text-decoration:none!important}
 a.cal svg{flex:none}
 /* Lo que sigue vigente pese al cierre: reapertura o recepción abierta. */
-.reabre{margin-top:10px;padding:10px 13px;background:rgba(21,128,61,.10);
+.reabre{margin-top:10px;padding:10px 13px;background:var(--reabreBg);
   border-radius:9px;font-size:14px;line-height:1.5}
-:root[data-theme=dark] .reabre{background:rgba(110,231,160,.10)}
 
 .revgrid{display:grid;gap:13px;
   grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
@@ -241,8 +246,7 @@ a.cal svg{flex:none}
 .rcard .nombre{font-weight:700;font-size:14.5px}
 .rcard .inst{color:var(--fg3);font-size:12.5px}
 .rcard .issn{color:var(--fg4);font-size:12px}
-.rcard .motivo{color:#b45309;font-size:12.5px;font-weight:650}
-:root[data-theme=dark] .rcard .motivo{color:#fcd34d}
+.rcard .motivo{color:var(--amb);font-size:12.5px;font-weight:650}
 .masbtn{display:block;margin:18px auto 0;background:var(--sup);
   border:1px solid var(--borde2);border-radius:11px;padding:11px 22px;
   font-size:14px;font-weight:650;font-family:inherit;cursor:pointer;
@@ -291,23 +295,161 @@ a.cal svg{flex:none}
 footer{border-top:1px solid var(--borde2);color:var(--fg3);font-size:13.5px;
   padding:26px 0 50px;line-height:1.6}
 footer a{color:var(--a1)}
-.oculto{display:none}
+/* !important porque hay reglas posteriores con display propio (.expo, .facetas):
+   sin esto ganaban por orden de aparición y el bloque seguía ocupando lugar
+   aun estando «oculto». */
+.oculto{display:none!important}
+
+/* ── barra de filtros ─────────────────────────────────────────────── */
+/* Un <details> por faceta: se pueden combinar varias condiciones a la vez,
+   que antes era imposible porque un único <select> solo admite una. */
+.facetas{display:flex;gap:7px;flex-wrap:wrap;align-items:center;
+  margin:14px 0 0}
+.fac{position:relative}
+.fac>summary{list-style:none;cursor:pointer;background:var(--sup);
+  border:1px solid var(--borde2);border-radius:10px;padding:9px 13px;
+  font-size:13.5px;font-weight:600;color:var(--fg2);white-space:nowrap;
+  min-height:40px;display:flex;align-items:center;gap:6px}
+.fac>summary::-webkit-details-marker{display:none}
+.fac>summary::after{content:"▾";font-size:10px;opacity:.6}
+.fac[open]>summary{border-color:var(--a1);color:var(--fg)}
+.fac>summary:focus-visible{outline:2px solid var(--a1);outline-offset:2px}
+.fac>summary .cuenta{background:var(--a1);color:#fff;border-radius:20px;
+  padding:1px 7px;font-size:11px;font-weight:700}
+.menu{position:absolute;z-index:30;top:calc(100% + 6px);left:0;min-width:230px;
+  max-height:340px;overflow:auto;background:var(--pag);
+  border:1px solid var(--borde2);border-radius:12px;padding:7px;
+  box-shadow:0 12px 34px rgba(15,23,42,.18)}
+.menu label{display:flex;align-items:center;gap:9px;padding:9px 10px;
+  border-radius:8px;font-size:14px;cursor:pointer;min-height:40px;
+  color:var(--fg2)}
+.menu label:hover{background:var(--chip);color:var(--fg)}
+.menu input{accent-color:var(--a1);width:17px;height:17px;flex:none}
+.menu .sep{border-top:1px solid var(--borde2);margin:5px 0}
+
+/* Filtros activos: sin esto no hay forma de saber qué condiciones se están
+   aplicando ni de sacar una sola sin empezar de nuevo. */
+.activos{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:12px 0 0}
+.fchip{display:inline-flex;align-items:center;gap:7px;background:var(--sup);
+  border:1px solid var(--a1);color:var(--fg);border-radius:20px;
+  padding:5px 6px 5px 13px;font-size:13px;font-weight:600}
+.fchip button{background:var(--chip);border:0;border-radius:50%;width:22px;
+  height:22px;cursor:pointer;color:var(--fg2);font-size:14px;line-height:1;
+  font-family:inherit;display:flex;align-items:center;justify-content:center}
+.fchip button:hover{background:#dc2626;color:#fff}
+.limpiar{background:none;border:0;color:var(--a1);font-family:inherit;
+  font-size:13px;font-weight:700;cursor:pointer;padding:6px 10px;
+  border-radius:8px;min-height:36px}
+.limpiar:hover{background:var(--chip)}
+
+.barrares{display:flex;justify-content:space-between;align-items:center;
+  gap:14px;flex-wrap:wrap;margin:18px 0 12px}
+.barrares .conteo{margin:0}
+.conteo b{color:var(--fg);font-size:15px}
+.ordenar{display:flex;align-items:center;gap:7px;font-size:13px;
+  color:var(--fg3)}
+.ordenar select{padding:7px 11px;font-size:13.5px;min-height:38px}
+
+mark{background:var(--markBg);color:var(--fg);border-radius:3px;
+  padding:0 2px;font-weight:700}
+
+/* Estado vacío: decir qué quitar es más útil que «sin resultados». */
+.vacio{background:var(--sup2);border:1px dashed var(--borde2);
+  border-radius:16px;padding:30px 26px;text-align:center}
+.vacio h3{margin:0 0 8px;font-size:17px;
+  font-family:'Bricolage Grotesque',system-ui,sans-serif}
+.vacio p{margin:0 0 16px;color:var(--fg2);font-size:14.5px}
+.vacio .acc{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.vacio button{background:var(--sup);border:1px solid var(--borde2);
+  border-radius:10px;padding:10px 18px;font-family:inherit;font-size:14px;
+  font-weight:650;cursor:pointer;color:var(--a1);min-height:44px}
+
+/* Guardar: la selección vive en el navegador, sin cuenta ni registro. */
+.guardar{display:inline-flex;align-items:center;gap:6px;font-size:13px;
+  background:var(--sup2);border:1px solid var(--borde2);border-radius:9px;
+  padding:6px 12px;cursor:pointer;font-family:inherit;color:var(--fg2);
+  min-height:36px}
+.guardar:hover{border-color:var(--a1);color:var(--a1)}
+.guardar[aria-pressed=true]{background:rgba(245,158,11,.14);
+  border-color:#d97706;color:var(--amb)}
+.reportar{font-size:12.5px;color:var(--fg4)!important;font-weight:500!important}
+.expo{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 18px}
+.expo button{background:var(--sup);border:1px solid var(--borde2);
+  border-radius:10px;padding:10px 16px;font-family:inherit;font-size:13.5px;
+  font-weight:650;cursor:pointer;color:var(--a1);min-height:44px}
+.expo button:hover{border-color:var(--a1)}
+
+/* Verificación por tarjeta: más útil que repetir la advertencia general. */
+/* --fg3 y no --fg4: a 12px, --fg4 se quedaba en 4,23 de contraste sobre el
+   fondo oscuro y el mínimo AA para texto normal es 4,5. */
+.verif{margin-top:9px;font-size:12px;color:var(--fg3);display:flex;
+  align-items:center;gap:6px}
+.verif.mal{color:var(--amb)}
+.chip.nueva{background:rgba(5,150,105,.16);color:var(--verdeTxt)}
+.chip.dos{background:rgba(124,58,237,.14);color:var(--violTxt)}
+
+/* Franja compacta del boletín, intercalada entre resultados. */
+.franja{display:flex;align-items:center;justify-content:space-between;gap:14px;
+  flex-wrap:wrap;background:var(--grad);color:#fff;border-radius:14px;
+  padding:15px 20px;margin:16px 0;box-shadow:var(--sombra)}
+.franja p{margin:0;font-size:14.5px;font-weight:600}
+.franja a{background:#fff;color:var(--a1);text-decoration:none;font-weight:750;
+  border-radius:10px;padding:9px 18px;font-size:14px;white-space:nowrap}
+
+.saltar{position:absolute;left:-9999px;background:var(--a1);color:#fff;
+  padding:12px 20px;border-radius:0 0 10px 0;z-index:99;font-weight:700}
+.saltar:focus{left:0;top:0}
+/* Etiquetas para lectores de pantalla: el placeholder desaparece al escribir,
+   así que no sirve como etiqueta del campo. */
+.vo{position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* En móvil el encabezado tapaba la primera convocatoria: las métricas quedan
+   plegadas y lo primero que se ve es el buscador. */
+.plegable>summary{cursor:pointer;list-style:none;font-size:14px;font-weight:700;
+  color:var(--a1);padding:12px 0;min-height:44px;display:flex;
+  align-items:center;gap:7px}
+.plegable>summary::-webkit-details-marker{display:none}
+.plegable>summary::after{content:"▾";font-size:11px}
+.plegable[open]>summary::after{content:"▴"}
 
 @media(max-width:760px){
   .tarj{grid-template-columns:70px 1fr}
   .gnum{font-size:21px}
-  header{padding:24px 0 16px}
+  header{padding:20px 0 12px}
   .env{padding:0 16px}
   nav .env{padding:10px 16px;gap:9px}
   .segs{width:100%;justify-content:space-between}
-  .segs button{flex:1;padding:9px 8px;font-size:13.5px}
-  /* Buscador en una fila entera y los dos selectores compartiendo la de
-     abajo: en una sola fila los tres quedaban ilegibles ("Tod...", "Tod..."). */
+  .segs button{flex:1;padding:9px 6px;font-size:13px}
+  /* Buscador en una fila entera: en una sola fila con los filtros quedaba
+     ilegible ("Tod...", "Tod..."). */
   input[type=search]{flex:1 0 100%;min-width:0}
   select{flex:1 1 0;min-width:0}
   .boletin{padding:20px 18px}
   .susForm input,.susForm button{flex:1 0 100%}
+  /* Las facetas se apilan, pero el menú desplegable NO puede ir dentro de un
+     contenedor con overflow: lo recortaría. Por eso se deja que envuelvan. */
+  .fac>summary{padding:9px 11px;font-size:13px}
+  .menu{min-width:0;width:max-content;max-width:min(300px,86vw);max-height:52vh}
+  .fac:nth-child(n+3) .menu{left:auto;right:0}
+  .barrares{align-items:flex-start}
+  /* Lo que se sacrifica en el encabezado es lo que ya está dicho en otro
+     lado: el subtítulo repite las cifras de las cajas, y la firma completa
+     está en el pie. La advertencia se queda, más compacta. */
+  .sub{display:none}
+  h1{font-size:23px;margin-bottom:9px}
+  .sello{font-size:11.5px;padding:5px 11px;margin-bottom:9px}
+  .firma{font-size:12px;margin-bottom:11px}
+  .ojo{padding:11px 13px;margin-bottom:13px;border-width:1.5px}
+  .ojo b{font-size:14px}
+  .ojo p{font-size:12.5px;margin-top:4px}
+  #tema{width:38px;height:38px}
+  .franja{flex-direction:column;align-items:flex-start}
+  .franja a{width:100%;text-align:center}
 }
+/* La faceta abierta necesita alcanzar el ancho completo del menú fijo. */
+@media(min-width:761px){.plegable>summary{display:none}
+  .plegable{display:contents}}
 
 .centro{max-width:640px;margin:0 auto;padding:70px 22px;text-align:center}
 .tilde{width:74px;height:74px;border-radius:50%;background:var(--grad);
