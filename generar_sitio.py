@@ -357,10 +357,8 @@ h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;
   border-radius:14px;padding:15px 19px;margin:0 0 20px}
 .ojo b{color:var(--amb);letter-spacing:.02em}
 .ojo p{margin:6px 0 0;color:var(--fg2);font-size:14.5px;line-height:1.55}
-.firma a,.enlaces a,.tarj a,.rcard a{color:var(--a1);text-decoration:none;
-  font-weight:650}
-.firma a:hover,.enlaces a:hover,.tarj a:hover,.rcard a:hover{
-  text-decoration:underline}
+.firma a,.tarj a,.rcard a{color:var(--a1);text-decoration:none;font-weight:650}
+.firma a:hover,.tarj a:hover,.rcard a:hover{text-decoration:underline}
 #tema{background:var(--sup2);border:1px solid var(--borde);color:var(--fg);
   border-radius:11px;width:44px;height:44px;font-size:17px;cursor:pointer;
   flex:none}
@@ -381,17 +379,6 @@ h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;
 .st.ok{background:rgba(5,150,105,.10);border-color:rgba(5,150,105,.30)}
 .st.ok b,.st.ok span{color:var(--verdeTxt)}
 .st.ref{background:var(--chip);border-color:transparent;opacity:.85}
-/* Rótulo que dice qué unidad cuenta el grupo de abajo: sin esto las cajas de
-   convocatorias y las de revistas se leen como una sola serie sumable. */
-.rotulo{margin:20px 0 8px;font-size:12.5px;text-transform:uppercase;
-  letter-spacing:.09em;color:var(--fg3);font-weight:700;
-  font-family:'Bricolage Grotesque',system-ui,sans-serif}
-.rotulo b{color:var(--fg);font-size:14px}
-.rotulo .acota{display:block;text-transform:none;letter-spacing:0;
-  font-weight:500;font-size:12.5px;color:var(--fg4);margin-top:2px}
-.acota.suelta{margin:10px 0 0;font-size:13px;color:var(--fg3);line-height:1.55;
-  max-width:78ch;background:var(--bg2);border-radius:9px;padding:11px 14px}
-.acota.suelta b{color:var(--fg)}
 /* Desglose del catálogo, en Cobertura: cada línea explica qué significa esa
    categoría, que en una caja de dos palabras no entra. */
 .desglose{display:grid;gap:2px;margin-bottom:18px}
@@ -401,14 +388,6 @@ h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;
 .dl b{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-size:19px;
   text-align:right;font-variant-numeric:tabular-nums}
 .dl span{color:var(--fg2);font-size:13.5px;line-height:1.5}
-.stats2{margin:12px 0 0;display:flex;gap:2px;flex-wrap:wrap;color:var(--fg3);
-  font-size:13px;align-items:center}
-.stats2 button{background:none;border:0;font-family:inherit;font-size:13px;
-  color:var(--fg3);cursor:pointer;padding:4px 9px;border-radius:7px}
-.stats2 button:hover{background:var(--chip);color:var(--fg)}
-.stats2 b{color:var(--fg)}
-.enlaces{display:flex;gap:18px;flex-wrap:wrap;margin-top:18px}
-.enlaces a{font-size:14px}
 
 nav{position:sticky;top:0;z-index:20;background:var(--pag);
   border-bottom:1px solid var(--borde2)}
@@ -1621,7 +1600,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(n===null) return;
     ev.preventDefault(); pestanas[n].focus(); cambiarSeccion(pestanas[n]);
   };
-  document.querySelectorAll('.st, .stats2 button').forEach(b=>
+  document.querySelectorAll('.st').forEach(b=>
     b.onclick=()=>irA(b.dataset.sec, b.dataset.f));
   // Las líneas del desglose filtran la tabla igual que las cajas.
   document.querySelectorAll('.dl').forEach(b=>
@@ -1807,20 +1786,6 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
       <b>{stats['revision_manual']}</b><span>revistas que requieren revisión manual</span></button>
   </div>
 
-  <p class="rotulo">Otras bases
-    <span class="acota">se superponen entre sí y con SCImago: una revista puede
-      estar en varias</span></p>
-  <p class="stats2">
-    <button data-sec="rev" data-f="scopus"><b>{stats['scopus']}</b> en Scopus</button>
-    <button data-sec="rev" data-f="scielo"><b>{stats['scielo']}</b> en SciELO</button>
-    <button data-sec="rev" data-f="doaj"><b>{stats['doaj']}</b> en DOAJ</button>
-    <button data-sec="rev" data-f="n1"><b>{stats['nivel1']}</b> Nivel 1 CONICET</button>
-  </p>
-  <p class="enlaces">
-    <a href="#boletin">Recibir el resumen semanal →</a>
-    <a href="{REPO}" target="_blank" rel="noopener">Código en GitHub →</a>
-    <a href="#limitaciones">Qué no cubre →</a>
-  </p>
   </div>
 </div></header>
 
