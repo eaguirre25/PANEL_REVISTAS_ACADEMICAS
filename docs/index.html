@@ -89,12 +89,18 @@ body{margin:0;background:var(--pag);color:var(--fg);
 @media (prefers-reduced-motion:reduce){.bgfx div{animation:none}}
 
 header{padding:34px 0 20px}
-.hcab{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+/* El botón de tema sale del flujo para que el título mida lo mismo que el
+   texto de abajo y que la franja del boletín: si va como hermano flex, se
+   lleva su ancho y el h1 queda más corto que todo lo demás. */
+.hcab{position:relative}
+#tema{position:absolute;top:0;right:0}
 h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;
   font-size:clamp(27px,4.4vw,48px);line-height:1.06;letter-spacing:-.02em;
-  margin:0 0 12px;background:var(--grad);-webkit-background-clip:text;
-  background-clip:text;color:transparent}
-.sub{margin:0 0 9px;color:var(--fg2);max-width:64ch;font-size:16px}
+  margin:0 0 12px;padding-right:56px;background:var(--grad);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+/* Sin max-width: el texto de presentación y el aviso ocupan el mismo ancho
+   que el título y la franja del boletín, en lugar de cortarse antes. */
+.sub{margin:0 0 9px;color:var(--fg2);font-size:16px}
 .sub b{color:var(--fg)}
 .firma{margin:0 0 16px;color:var(--fg3);font-size:13.5px}
 .firma b{color:var(--fg)}
@@ -107,7 +113,7 @@ h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;
 .sello b{color:var(--fg)}
 /* Advertencia principal: es lo que evita que alguien confíe de más. */
 .ojo{border:2px solid var(--amb);background:var(--ojoBg);
-  border-radius:14px;padding:15px 19px;margin:0 0 20px;max-width:74ch}
+  border-radius:14px;padding:15px 19px;margin:0 0 20px}
 .ojo b{color:var(--amb);letter-spacing:.02em}
 .ojo p{margin:6px 0 0;color:var(--fg2);font-size:14.5px;line-height:1.55}
 .firma a,.enlaces a,.tarj a,.rcard a{color:var(--a1);text-decoration:none;
@@ -181,6 +187,10 @@ input[type=search],select{background:var(--sup);border:1px solid var(--borde2);
   border-radius:11px;padding:11px 14px;font-size:15px;font-family:inherit;
   min-height:44px;color:var(--fg)}
 input[type=search]{flex:1;min-width:200px}
+/* El buscador salió de la barra fija y ahora abre los resultados, debajo del
+   aviso de lo que cierra esta semana. Fuera de un contenedor flex necesita
+   pedir el ancho explícitamente. */
+#q{width:100%;margin:0 0 2px}
 input:focus-visible,select:focus-visible{outline:2px solid var(--a1);
   outline-offset:-1px}
 
@@ -443,7 +453,7 @@ mark{background:var(--markBg);color:var(--fg);border-radius:3px;
      lado: el subtítulo repite las cifras de las cajas, y la firma completa
      está en el pie. La advertencia se queda, más compacta. */
   .sub{display:none}
-  h1{font-size:23px;margin-bottom:9px}
+  h1{font-size:23px;margin-bottom:9px;padding-right:46px}
   .sello{font-size:11.5px;padding:5px 11px;margin-bottom:9px}
   .firma{font-size:12px;margin-bottom:11px}
   .ojo{padding:11px 13px;margin-bottom:13px;border-width:1.5px}
@@ -476,24 +486,25 @@ mark{background:var(--markBg);color:var(--fg);border-radius:3px;
   <div class="hcab">
     <div>
       <p class="sello"><span class="punto"></span>
-        Última actualización automática: <b>03/08/2026 22:48</b></p>
+        Última actualización automática: <b>03/08/2026 22:53</b></p>
       <h1>Panel de revistas académicas iberoamericanas</h1>
-      <p class="sub">Convocatorias y llamados a dossier abiertos en
-        <b>1007</b> revistas de ciencias sociales y humanidades
-        de <b>27</b> países. Los plazos se calculan con la fecha
-        de hoy.</p>
-      <p class="firma">Desarrollado por <b>Elías Aguirre</b>. Comentarios,
-        feedback y consultas a <a id="contacto" href="#">(escribir)</a>.</p>
-      <div class="ojo">
-        <b>¡IMPORTANTE! Chequeá e inspeccioná la información publicada.</b>
-        <p>La idea es facilitar —no reemplazar— la actividad propia de
-          búsqueda y revisión. Los datos se extraen automáticamente y pueden
-          estar incompletos o desactualizados: verificá siempre en el sitio de
-          la revista antes de preparar un envío.</p>
-      </div>
     </div>
     <button id="tema" title="Cambiar entre tema claro y oscuro"
             aria-label="Cambiar tema">◑</button>
+  </div>
+
+  <p class="sub">Convocatorias y llamados a dossier abiertos en
+    <b>1007</b> revistas de ciencias sociales y humanidades
+    de <b>27</b> países. Los plazos se calculan con la fecha
+    de hoy.</p>
+  <p class="firma">Desarrollado por <b>Elías Aguirre</b>. Comentarios,
+    feedback y consultas a <a id="contacto" href="#">(escribir)</a>.</p>
+  <div class="ojo">
+    <b>¡IMPORTANTE! Chequeá e inspeccioná la información publicada.</b>
+    <p>La idea es facilitar —no reemplazar— la actividad propia de
+      búsqueda y revisión. Los datos se extraen automáticamente y pueden
+      estar incompletos o desactualizados: verificá siempre en el sitio de
+      la revista antes de preparar un envío.</p>
   </div>
 
   <div class="franja">
@@ -519,17 +530,6 @@ mark{background:var(--markBg);color:var(--fg);border-radius:3px;
        title="Su servidor no responde, cambió de dirección o exige registrarse. Si tienen convocatoria abierta, no figura acá.">
       <b>54</b><span>revistas que requieren revisión manual</span></button>
   </div>
-
-  <p class="rotulo">SCImago · <b>548</b> revistas con SJR
-    <span class="acota">los cuartiles reparten ese total</span></p>
-  <p class="stats2">
-    <button data-sec="rev" data-f="Q1"><b>29</b> Q1</button>
-    <button data-sec="rev" data-f="Q2"><b>126</b> Q2</button>
-    <button data-sec="rev" data-f="Q3"><b>210</b> Q3</button>
-    <button data-sec="rev" data-f="Q4"><b>165</b> Q4</button>
-    <button data-sec="rev" data-f="sincuartil"><b>18</b>
-      sin cuartil</button>
-  </p>
 
   <p class="rotulo">Otras bases
     <span class="acota">se superponen entre sí y con SCImago: una revista puede
@@ -561,12 +561,15 @@ mark{background:var(--markBg);color:var(--fg);border-radius:3px;
     <button role="tab" data-s="rev" aria-selected="false" tabindex="-1"
             aria-controls="lista">Revistas</button>
   </div>
-  <label class="vo" for="q">Buscar convocatorias, temas o revistas</label>
-  <input type="search" id="q"
-         placeholder="Buscar convocatorias, temas o revistas…">
 </div></nav>
 
 <main><div class="env">
+
+  <div class="urgente oculto" id="urgente"></div>
+
+  <label class="vo" for="q">Buscar convocatorias, temas o revistas</label>
+  <input type="search" id="q"
+         placeholder="Buscar convocatorias, temas o revistas…">
 
   <div class="facetas" id="facetas"></div>
   <div class="activos" id="activos"></div>
@@ -600,7 +603,6 @@ mark{background:var(--markBg);color:var(--fg);border-radius:3px;
       <b>Descargar CSV</b> o <b>el calendario</b>.</p>
   </div>
 
-  <div class="urgente oculto" id="urgente"></div>
   <div id="lista" role="tabpanel" tabindex="-1"></div>
 
   <section class="boletin" id="boletin">
@@ -691,7 +693,7 @@ mark{background:var(--markBg);color:var(--fg);border-radius:3px;
 </div></main>
 
 <footer><div class="env">
-  Instantánea generada el 03/08/2026 22:48. Los datos provienen de
+  Instantánea generada el 03/08/2026 22:53. Los datos provienen de
   CAICYT-CONICET, Elsevier, SciELO, DOAJ y OpenAlex, y se rigen por sus propias
   condiciones de uso. El código es MIT.<br>
   Esta página es estática: para el panel completo con actualización automática

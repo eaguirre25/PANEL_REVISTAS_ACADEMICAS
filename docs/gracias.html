@@ -87,12 +87,18 @@ body{margin:0;background:var(--pag);color:var(--fg);
 @media (prefers-reduced-motion:reduce){.bgfx div{animation:none}}
 
 header{padding:34px 0 20px}
-.hcab{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+/* El botón de tema sale del flujo para que el título mida lo mismo que el
+   texto de abajo y que la franja del boletín: si va como hermano flex, se
+   lleva su ancho y el h1 queda más corto que todo lo demás. */
+.hcab{position:relative}
+#tema{position:absolute;top:0;right:0}
 h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;
   font-size:clamp(27px,4.4vw,48px);line-height:1.06;letter-spacing:-.02em;
-  margin:0 0 12px;background:var(--grad);-webkit-background-clip:text;
-  background-clip:text;color:transparent}
-.sub{margin:0 0 9px;color:var(--fg2);max-width:64ch;font-size:16px}
+  margin:0 0 12px;padding-right:56px;background:var(--grad);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+/* Sin max-width: el texto de presentación y el aviso ocupan el mismo ancho
+   que el título y la franja del boletín, en lugar de cortarse antes. */
+.sub{margin:0 0 9px;color:var(--fg2);font-size:16px}
 .sub b{color:var(--fg)}
 .firma{margin:0 0 16px;color:var(--fg3);font-size:13.5px}
 .firma b{color:var(--fg)}
@@ -105,7 +111,7 @@ h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;
 .sello b{color:var(--fg)}
 /* Advertencia principal: es lo que evita que alguien confíe de más. */
 .ojo{border:2px solid var(--amb);background:var(--ojoBg);
-  border-radius:14px;padding:15px 19px;margin:0 0 20px;max-width:74ch}
+  border-radius:14px;padding:15px 19px;margin:0 0 20px}
 .ojo b{color:var(--amb);letter-spacing:.02em}
 .ojo p{margin:6px 0 0;color:var(--fg2);font-size:14.5px;line-height:1.55}
 .firma a,.enlaces a,.tarj a,.rcard a{color:var(--a1);text-decoration:none;
@@ -179,6 +185,10 @@ input[type=search],select{background:var(--sup);border:1px solid var(--borde2);
   border-radius:11px;padding:11px 14px;font-size:15px;font-family:inherit;
   min-height:44px;color:var(--fg)}
 input[type=search]{flex:1;min-width:200px}
+/* El buscador salió de la barra fija y ahora abre los resultados, debajo del
+   aviso de lo que cierra esta semana. Fuera de un contenedor flex necesita
+   pedir el ancho explícitamente. */
+#q{width:100%;margin:0 0 2px}
 input:focus-visible,select:focus-visible{outline:2px solid var(--a1);
   outline-offset:-1px}
 
@@ -441,7 +451,7 @@ mark{background:var(--markBg);color:var(--fg);border-radius:3px;
      lado: el subtítulo repite las cifras de las cajas, y la firma completa
      está en el pie. La advertencia se queda, más compacta. */
   .sub{display:none}
-  h1{font-size:23px;margin-bottom:9px}
+  h1{font-size:23px;margin-bottom:9px;padding-right:46px}
   .sello{font-size:11.5px;padding:5px 11px;margin-bottom:9px}
   .firma{font-size:12px;margin-bottom:11px}
   .ojo{padding:11px 13px;margin-bottom:13px;border-width:1.5px}
