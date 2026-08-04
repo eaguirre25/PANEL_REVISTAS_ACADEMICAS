@@ -373,7 +373,11 @@ mark{background:var(--markBg);color:var(--fg);border-radius:3px;
 .guardar[aria-pressed=true]{background:rgba(245,158,11,.14);
   border-color:#d97706;color:var(--amb)}
 .reportar{font-size:12.5px;color:var(--fg4)!important;font-weight:500!important}
-.expo{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 18px}
+.expo{margin:0 0 18px}
+.expoBotones{display:flex;gap:10px;flex-wrap:wrap}
+.notaGuard{margin:11px 0 0;font-size:12.5px;color:var(--fg3);line-height:1.5;
+  max-width:78ch}
+.notaGuard b{color:var(--fg)}
 .expo button{background:var(--sup);border:1px solid var(--borde2);
   border-radius:10px;padding:10px 16px;font-family:inherit;font-size:13.5px;
   font-weight:650;cursor:pointer;color:var(--a1);min-height:44px}
@@ -404,14 +408,14 @@ mark{background:var(--markBg);color:var(--fg);border-radius:3px;
 .vo{position:absolute;width:1px;height:1px;padding:0;margin:-1px;
   overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 
-/* En móvil el encabezado tapaba la primera convocatoria: las métricas quedan
-   plegadas y lo primero que se ve es el buscador. */
-.plegable>summary{cursor:pointer;list-style:none;font-size:14px;font-weight:700;
-  color:var(--a1);padding:12px 0;min-height:44px;display:flex;
-  align-items:center;gap:7px}
-.plegable>summary::-webkit-details-marker{display:none}
-.plegable>summary::after{content:"▾";font-size:11px}
-.plegable[open]>summary::after{content:"▴"}
+/* Las cajas de conteos van SIEMPRE visibles. Solo en pantallas chicas se
+   pliegan detrás de un botón, porque ahí empujaban la primera convocatoria
+   fuera de la vista.
+   No se usa <details> a propósito: para dejarlo desplegado en escritorio hay
+   que anular el plegado nativo con display:contents, y eso no se comporta
+   igual en todos los navegadores. Un div más un botón que solo existe en
+   móvil da el mismo resultado sin depender de eso. */
+.verMas{display:none}
 
 @media(max-width:760px){
   .tarj{grid-template-columns:70px 1fr}
@@ -444,12 +448,20 @@ mark{background:var(--markBg);color:var(--fg);border-radius:3px;
   .ojo b{font-size:14px}
   .ojo p{font-size:12.5px;margin-top:4px}
   #tema{width:38px;height:38px}
-  .franja{flex-direction:column;align-items:flex-start}
-  .franja a{width:100%;text-align:center}
+  .franja{flex-direction:column;align-items:stretch;padding:12px 15px;gap:10px;
+    margin:10px 0 14px}
+  .franja p{font-size:13.5px}
+  .franja a{text-align:center;padding:10px 16px;font-size:13.5px}
+  .verMas{display:flex;align-items:center;justify-content:center;gap:7px;
+    width:100%;background:var(--sup);border:1px solid var(--borde2);
+    border-radius:11px;padding:12px 15px;font-family:inherit;font-size:14px;
+    font-weight:700;color:var(--a1);cursor:pointer;min-height:44px;
+    margin:0 0 14px}
+  .verMas::after{content:"▾";font-size:11px}
+  .verMas[aria-expanded=true]::after{content:"▴"}
+  .metricas{display:none}
+  .metricas.abierto{display:block}
 }
-/* La faceta abierta necesita alcanzar el ancho completo del menú fijo. */
-@media(min-width:761px){.plegable>summary{display:none}
-  .plegable{display:contents}}
 
 .centro{max-width:640px;margin:0 auto;padding:70px 22px;text-align:center}
 .tilde{width:74px;height:74px;border-radius:50%;background:var(--grad);

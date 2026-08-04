@@ -616,7 +616,11 @@ mark{background:var(--markBg);color:var(--fg);border-radius:3px;
 .guardar[aria-pressed=true]{background:rgba(245,158,11,.14);
   border-color:#d97706;color:var(--amb)}
 .reportar{font-size:12.5px;color:var(--fg4)!important;font-weight:500!important}
-.expo{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 18px}
+.expo{margin:0 0 18px}
+.expoBotones{display:flex;gap:10px;flex-wrap:wrap}
+.notaGuard{margin:11px 0 0;font-size:12.5px;color:var(--fg3);line-height:1.5;
+  max-width:78ch}
+.notaGuard b{color:var(--fg)}
 .expo button{background:var(--sup);border:1px solid var(--borde2);
   border-radius:10px;padding:10px 16px;font-family:inherit;font-size:13.5px;
   font-weight:650;cursor:pointer;color:var(--a1);min-height:44px}
@@ -647,14 +651,14 @@ mark{background:var(--markBg);color:var(--fg);border-radius:3px;
 .vo{position:absolute;width:1px;height:1px;padding:0;margin:-1px;
   overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 
-/* En móvil el encabezado tapaba la primera convocatoria: las métricas quedan
-   plegadas y lo primero que se ve es el buscador. */
-.plegable>summary{cursor:pointer;list-style:none;font-size:14px;font-weight:700;
-  color:var(--a1);padding:12px 0;min-height:44px;display:flex;
-  align-items:center;gap:7px}
-.plegable>summary::-webkit-details-marker{display:none}
-.plegable>summary::after{content:"▾";font-size:11px}
-.plegable[open]>summary::after{content:"▴"}
+/* Las cajas de conteos van SIEMPRE visibles. Solo en pantallas chicas se
+   pliegan detrás de un botón, porque ahí empujaban la primera convocatoria
+   fuera de la vista.
+   No se usa <details> a propósito: para dejarlo desplegado en escritorio hay
+   que anular el plegado nativo con display:contents, y eso no se comporta
+   igual en todos los navegadores. Un div más un botón que solo existe en
+   móvil da el mismo resultado sin depender de eso. */
+.verMas{display:none}
 
 @media(max-width:760px){
   .tarj{grid-template-columns:70px 1fr}
@@ -687,12 +691,20 @@ mark{background:var(--markBg);color:var(--fg);border-radius:3px;
   .ojo b{font-size:14px}
   .ojo p{font-size:12.5px;margin-top:4px}
   #tema{width:38px;height:38px}
-  .franja{flex-direction:column;align-items:flex-start}
-  .franja a{width:100%;text-align:center}
+  .franja{flex-direction:column;align-items:stretch;padding:12px 15px;gap:10px;
+    margin:10px 0 14px}
+  .franja p{font-size:13.5px}
+  .franja a{text-align:center;padding:10px 16px;font-size:13.5px}
+  .verMas{display:flex;align-items:center;justify-content:center;gap:7px;
+    width:100%;background:var(--sup);border:1px solid var(--borde2);
+    border-radius:11px;padding:12px 15px;font-family:inherit;font-size:14px;
+    font-weight:700;color:var(--a1);cursor:pointer;min-height:44px;
+    margin:0 0 14px}
+  .verMas::after{content:"▾";font-size:11px}
+  .verMas[aria-expanded=true]::after{content:"▴"}
+  .metricas{display:none}
+  .metricas.abierto{display:block}
 }
-/* La faceta abierta necesita alcanzar el ancho completo del menú fijo. */
-@media(min-width:761px){.plegable>summary{display:none}
-  .plegable{display:contents}}
 """
 
 JS = """
@@ -1290,10 +1302,9 @@ function vacio(msg){
     +'<p>'+esc(msg)+'</p><div class="acc">'+sug.join('')+'</div></div>';
 }
 
-function franja(){
-  return '<div class="franja"><p>¿Querés recibir las nuevas convocatorias cada '
-    +'lunes?</p><a href="#boletin">Suscribirme</a></div>';
-}
+// La franja del boletín es una sola, fija bajo el aviso principal. Antes se
+// intercalaba tras la octava tarjeta; teniéndola arriba, repetirla dentro de
+// los resultados sería mostrar dos veces lo mismo.
 
 function pinta(){
   const ts=palabras(F.q);
@@ -1301,7 +1312,9 @@ function pinta(){
   const aviso=document.getElementById('urgente');
   const conteo=document.getElementById('conteo');
   const expo=document.getElementById('expo');
-  expo.classList.toggle('oculto', seccion!=='guard');
+  // Sin nada guardado, los botones de exportar no tendrían qué exportar: el
+  // estado vacío ya explica cómo empezar.
+  expo.classList.toggle('oculto', seccion!=='guard' || !guardadas.length);
   document.getElementById('cobertura').classList.toggle('oculto', seccion!=='rev');
   escribirURL();
   pintarActivos();
@@ -1329,13 +1342,12 @@ function pinta(){
         : vacio('Probá quitar el cuartil, ampliar el plazo o usar una palabra '
           +'más general.');
     } else if(F.orden){
-      const vis=ordenar(l,'revista').slice(0,limite);
-      cont.innerHTML = vis.map((c,i)=>tarjetaConv(c,ts)+(i===7?franja():'')).join('')
-        + botonMas(l.length);
+      cont.innerHTML = ordenar(l,'revista').slice(0,limite)
+        .map(c=>tarjetaConv(c,ts)).join('') + botonMas(l.length);
     } else {
       // Sin orden explícito se agrupa por urgencia, que es la lectura por
       // defecto: lo que cierra primero, primero.
-      let html='', puestas=0, franjaPuesta=false;
+      let html='', puestas=0;
       GRUPOS.forEach(g=>{
         const sub=l.filter(c=>nivelUrg(dias(c.fecha_cierre))===g.u);
         if(!sub.length || puestas>=limite) return;
@@ -1344,7 +1356,6 @@ function pinta(){
         for(const c of sub){
           if(puestas>=limite) break;
           html+=tarjetaConv(c,ts); puestas++;
-          if(puestas===8 && !franjaPuesta){ html+=franja(); franjaPuesta=true; }
         }
       });
       cont.innerHTML = html + botonMas(l.length);
@@ -1611,6 +1622,11 @@ document.addEventListener('DOMContentLoaded',()=>{
     limite=PAGINA; pinta(); };
   document.getElementById('fOrden').onchange=ev=>{
     F.orden=ev.target.value; limite=PAGINA; pinta(); };
+  const vm=document.getElementById('verMetricas');
+  if(vm) vm.onclick=()=>{
+    const abierto=document.getElementById('metricas').classList.toggle('abierto');
+    vm.setAttribute('aria-expanded', abierto?'true':'false');
+  };
   document.getElementById('expCsv').onclick=exportarCSV;
   document.getElementById('expIcs').onclick=exportarICS;
   document.getElementById('expTxt').onclick=copiarLista;
@@ -1755,8 +1771,15 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
     <button id="tema" title="Cambiar entre tema claro y oscuro"
             aria-label="Cambiar tema">◑</button>
   </div>
-  <details class="plegable" id="metricas">
-  <summary>Ver estadísticas y cobertura</summary>
+
+  <div class="franja">
+    <p>¿Querés recibir las nuevas convocatorias cada lunes?</p>
+    <a href="#boletin">Suscribirme</a>
+  </div>
+
+  <button class="verMas" id="verMetricas" aria-expanded="false"
+          aria-controls="metricas">Ver estadísticas y cobertura</button>
+  <div class="metricas" id="metricas">
   <div class="stats">
     <button class="st urg" data-sec="conv" data-f="urgente">
       <b id="stUrg">–</b><span>cierran en 7 días</span></button>
@@ -1798,7 +1821,7 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
     <a href="{REPO}" target="_blank" rel="noopener">Código en GitHub →</a>
     <a href="#limitaciones">Qué no cubre →</a>
   </p>
-  </details>
+  </div>
 </div></header>
 
 <nav><div class="env">
@@ -1838,12 +1861,19 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
   </div>
 
   <div class="expo oculto" id="expo">
-    <button id="expAbrir">Abrir todas las fuentes</button>
-    <button id="expCsv">Descargar CSV</button>
-    <button id="expIcs">Descargar calendario (.ics)</button>
-    <button id="expTxt">Copiar la lista</button>
-    <span id="expoEstado" role="status" aria-live="polite"
-          style="align-self:center;font-size:13px;color:var(--a2)"></span>
+    <div class="expoBotones">
+      <button id="expAbrir">Abrir todas las fuentes</button>
+      <button id="expCsv">Descargar CSV</button>
+      <button id="expIcs">Descargar calendario (.ics)</button>
+      <button id="expTxt">Copiar la lista</button>
+      <span id="expoEstado" role="status" aria-live="polite"
+            style="align-self:center;font-size:13px;color:var(--a2)"></span>
+    </div>
+    <p class="notaGuard">Lo que guardás queda en <b>este</b> navegador y sigue
+      acá cuando volvés, sin crear ninguna cuenta. Como no se envía a ningún
+      lado, tampoco aparece en tu teléfono ni en otra computadora, y se borra
+      si limpiás los datos de navegación. Para llevarte la selección, usá
+      <b>Descargar CSV</b> o <b>el calendario</b>.</p>
   </div>
 
   <div class="urgente oculto" id="urgente"></div>
