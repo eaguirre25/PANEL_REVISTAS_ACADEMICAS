@@ -1,0 +1,77 @@
+name: Enviar boletín semanal
+
+# Todos los martes a las 13:00 de Argentina (UTC-3 = 16:00 UTC).
+# También puede ejecutarse manualmente desde Actions.
+on:
+  schedule:
+    - cron: '0 16 * * 2'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: boletin-semanal
+  cancel-in-progress: false
+
+jobs:
+  enviar:
+    name: Preparar datos y enviar boletín
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Recuperar lista de Scopus del caché
+        uses: actions/cache@v4
+        with:
+          path: datos/scopus_source_list.xlsx
+          key: scopus-boletin-v1
+          restore-keys: scopus-
+
+      # La base SQLite no se publica porque contiene datos personales.
+      # Por eso el martes se reconstruyen los datos públicos antes del envío.
+      - name: Reconstruir catálogo
+        run: |
+          python catalogo.py || true
+          python externas.py || true
+          python scimago.py || true
+          python enriquecer_docx.py || true
+          python sitios_verificados.py || true
+          python fusionar_duplicados.py || true
+
+      - name: Reconstruir convocatorias
+        run: |
+          python convocatorias.py || true
+          python permanentes.py || true
+          python latinrev.py || true
+          python manuales.py || true
+          python recalcular_temas.py || true
+          python indizacion.py || true
+
+      - name: Enviar resumen semanal
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+          BOLETIN_SUSCRIPTORES: ${{ secrets.BOLETIN_SUSCRIPTORES }}
+        run: python boletin_ci.py
+
+      - name: Registrar resultado
+        if: always()
+        run: |
+          echo "## Boletín semanal" >> "$GITHUB_STEP_SUMMARY"
+          echo "Programado: martes 13:00 (America/Argentina/Buenos_Aires)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Ejecución: $(TZ='America/Argentina/Buenos_Aires' date +'%d/%m/%Y %H:%M')" >> "$GITHUB_STEP_SUMMARY"
+          echo "Estado: ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
