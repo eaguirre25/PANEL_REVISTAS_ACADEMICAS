@@ -60,6 +60,11 @@ jobs:
           python recalcular_temas.py || true
           python indizacion.py || true
 
+      - name: Ajustar textos al envío de los martes
+        run: |
+          sed -i 's/todos los lunes/todos los martes/g' boletin.py
+          sed -i 's/Te llega todos los lunes/Te llega todos los martes/g' boletin.py
+
       - name: Enviar resumen semanal
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
