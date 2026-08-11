@@ -1,11 +1,16 @@
 name: Enviar boletín semanal
 
-# Todos los martes a las 13:00 de Argentina (UTC-3 = 16:00 UTC).
-# También puede ejecutarse manualmente desde Actions.
+# El martes comienza a preparar los datos a las 11:00 de Argentina
+# y espera hasta las 13:00 para enviar el correo. Así el horario del mail
+# no depende de cuánto tarde el rastreo.
 on:
   schedule:
-    - cron: '0 16 * * 2'
+    - cron: '0 14 * * 2'   # martes 11:00 Argentina (UTC-3)
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/boletin.yml'
 
 permissions:
   contents: read
@@ -16,6 +21,10 @@ concurrency:
 
 jobs:
   enviar:
+    # El push solo sirve como recuperación/prueba cuando el commit lleva
+    # explícitamente la marca [enviar-boletin]. Los cambios normales del
+    # workflow no mandan correos por accidente.
+    if: github.event_name != 'push' || contains(github.event.head_commit.message, '[enviar-boletin]')
     name: Preparar datos y enviar boletín
     runs-on: ubuntu-latest
     timeout-minutes: 180
@@ -65,6 +74,25 @@ jobs:
           sed -i 's/todos los lunes/todos los martes/g' boletin.py
           sed -i 's/Te llega todos los lunes/Te llega todos los martes/g' boletin.py
 
+      - name: Esperar hasta las 13:00 de Argentina
+        if: github.event_name == 'schedule'
+        run: |
+          python - <<'PY'
+          import time
+          from datetime import datetime, time as dtime
+          from zoneinfo import ZoneInfo
+
+          tz = ZoneInfo('America/Argentina/Buenos_Aires')
+          ahora = datetime.now(tz)
+          objetivo = datetime.combine(ahora.date(), dtime(13, 0), tzinfo=tz)
+          segundos = (objetivo - ahora).total_seconds()
+          if segundos > 0:
+              print(f'Esperando {segundos/60:.1f} minutos hasta las 13:00 de Argentina')
+              time.sleep(segundos)
+          else:
+              print('La preparación terminó después de las 13:00; se envía inmediatamente.')
+          PY
+
       - name: Enviar resumen semanal
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
@@ -77,6 +105,6 @@ jobs:
         if: always()
         run: |
           echo "## Boletín semanal" >> "$GITHUB_STEP_SUMMARY"
-          echo "Programado: martes 13:00 (America/Argentina/Buenos_Aires)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Objetivo de envío: martes 13:00 (America/Argentina/Buenos_Aires)" >> "$GITHUB_STEP_SUMMARY"
           echo "Ejecución: $(TZ='America/Argentina/Buenos_Aires' date +'%d/%m/%Y %H:%M')" >> "$GITHUB_STEP_SUMMARY"
           echo "Estado: ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
