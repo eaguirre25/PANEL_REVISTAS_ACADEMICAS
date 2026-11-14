@@ -39,7 +39,11 @@ jobs:
           cache: pip
 
       - name: Instalar dependencias
-        run: pip install -r requirements.txt
+        run: pip install -r requirements-ci.txt
+
+      # Si una prueba falla, la corrida se detiene ANTES de rastrear y publicar.
+      - name: Pruebas
+        run: python -m pytest -q
 
       # La lista de fuentes de Scopus pesa ~26 MB y cambia una vez por mes:
       # se cachea para no volver a descargarla en cada corrida.
@@ -157,6 +161,38 @@ jobs:
                   falla = True
           if falla:
               sys.exit(1)
+          PY
+
+      - name: Resumen de la corrida
+        if: always()
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          try:
+              d = json.load(open('docs/datos.json', encoding='utf-8'))
+          except Exception as err:
+              print('## Corrida de actualización')
+              print(f'No se pudo leer docs/datos.json: {err}')
+              raise SystemExit
+          e = d.get('estadisticas', {})
+          print('## Corrida de actualización')
+          print(f"Generado: {e.get('generado')}. Si la guardia de datos abortó, "
+                "estos números son los de la reconstrucción rechazada.\n")
+          print('| Indicador | Valor |')
+          print('|---|---|')
+          for k, t in [('revistas', 'Revistas'),
+                       ('convocatorias', 'Convocatorias'),
+                       ('arrastradas', 'De ellas, arrastradas de la semana pasada'),
+                       ('con_fecha', 'Con fecha de cierre'),
+                       ('nuevas', 'Marcadas «Nueva»'),
+                       ('permanentes', 'Recepción permanente'),
+                       ('revision_manual', 'Revistas que requieren revisión manual')]:
+              print(f'| {t} | {e.get(k, 0)} |')
+          print('\n### Estado de lectura de los sitios\n')
+          print('| Estado | Revistas |')
+          print('|---|---|')
+          for x in d.get('estados', []):
+              print(f"| {x['estado']} | {x['n']} |")
           PY
 
       - name: Publicar si hubo cambios

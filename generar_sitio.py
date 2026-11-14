@@ -15,6 +15,7 @@ import json
 import logging
 from datetime import date, datetime
 
+import continuidad
 import deteccion
 from database import conectar, contar, obtener_convocatorias_cerradas
 
@@ -204,8 +205,14 @@ def reunir_datos():
     for fila in revistas + convocatorias + cerradas:
         fila['pais'] = _pais_norm(fila.get('pais'))
 
-    # La base se reconstruye en cada corrida de CI: la primera detección real
-    # se toma de la memoria versionada (ver deteccion.py), no de la base.
+    # CI reconstruye la base cada semana: si el sitio de una revista no
+    # respondió hoy, se conservan sus convocatorias de la publicación anterior
+    # (ver continuidad.py), marcadas como arrastradas.
+    arrastradas = continuidad.arrastrar(
+        continuidad.cargar_publicado(), convocatorias, revistas)
+
+    # La primera detección real se toma de la memoria versionada
+    # (ver deteccion.py), no de la base, que también se reconstruye.
     deteccion.aplicar(convocatorias, persistir=True)
 
     linea_base = _linea_base()
@@ -227,6 +234,7 @@ def reunir_datos():
         'externas': sum(1 for r in revistas if r['origen'] == 'externa'),
         'paises': len({r['pais'] for r in revistas if r['pais'] != REGIONAL}),
         'convocatorias': len(convocatorias),
+        'arrastradas': len(arrastradas),
         'dossiers': sum(1 for c in convocatorias if c['es_dossier']),
         'con_tema': sum(1 for c in convocatorias if c['tema']),
         'con_fecha': sum(1 for c in convocatorias if c['fecha_cierre']),
@@ -274,7 +282,25 @@ def reunir_datos():
     return revistas, convocatorias, cerradas, estados, stats
 
 
-CSS = """
+# Tipografías propias (SIL Open Font License; licencias en docs/fonts/). Antes se
+# pedían a Google Fonts, lo que enviaba la IP de cada visitante a Google.
+FUENTES_CSS = """
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-display:swap;
+  font-weight:200 800;src:url(fonts/bricolage-grotesque-latin-ext-opsz-normal.woff2) format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-display:swap;
+  font-weight:200 800;src:url(fonts/bricolage-grotesque-latin-opsz-normal.woff2) format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Manrope';font-style:normal;font-display:swap;
+  font-weight:200 800;src:url(fonts/manrope-latin-ext-wght-normal.woff2) format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Manrope';font-style:normal;font-display:swap;
+  font-weight:200 800;src:url(fonts/manrope-latin-wght-normal.woff2) format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+"""
+
+
+CSS = FUENTES_CSS + """
 *,*::before,*::after{box-sizing:border-box}
 :root{
   --a1:#0891b2; --a2:#059669; --a3:#7c3aed;
@@ -661,6 +687,10 @@ mark{background:var(--markBg);color:var(--fg);border-radius:3px;
 .saltar{position:absolute;left:-9999px;background:var(--a1);color:#fff;
   padding:12px 20px;border-radius:0 0 10px 0;z-index:99;font-weight:700}
 .saltar:focus{left:0;top:0}
+/* Foco visible en todo control: sobre el gradiente o el vidrio, el contorno por
+   defecto del navegador casi no se ve. */
+button:focus-visible,a:focus-visible,[role=tab]:focus-visible,summary:focus-visible{
+  outline:3px solid var(--fg);outline-offset:2px}
 /* Etiquetas para lectores de pantalla: el placeholder desaparece al escribir,
    así que no sirve como etiqueta del campo. */
 .vo{position:absolute;width:1px;height:1px;padding:0;margin:-1px;
@@ -1746,6 +1776,12 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 def construir_html(revistas, convocatorias, cerradas, estados, stats):
     formulario = formulario_suscripcion()
+    n_arr = stats.get('arrastradas', 0)
+    nota_arrastre = (
+        f'<li><b>{n_arr}</b> convocatoria{"" if n_arr == 1 else "s"} de la lista '
+        f'{"es" if n_arr == 1 else "son"} de la última lectura correcta: el '
+        'sitio de la revista no respondió esta semana. Cada una lo indica en '
+        'su tarjeta, con la fecha de esa lectura.</li>') if n_arr else ''
     return f"""<!doctype html>
 <html lang="es"><head>
 <meta charset="utf-8">
@@ -1759,10 +1795,8 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
 <meta property="og:description" content="Convocatorias y llamados a dossier en {stats['revistas']} revistas de ciencias sociales y humanidades.">
 <meta property="og:url" content="{SITIO}/">
 <link rel="canonical" href="{SITIO}/">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet">
+<link rel="preload" href="fonts/manrope-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/bricolage-grotesque-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
 <style>{CSS}</style>
 </head><body>
 
@@ -1930,6 +1964,7 @@ podemos mostrarlas, pero podés descargar los datos completos en
       <li>Solo <b>{stats['con_fecha']} de {stats['convocatorias']}</b>
         convocatorias declaran su fecha de cierre en un formato legible. Las
         demás figuran «sin fecha declarada»: el reloj no puede avisar de ellas.</li>
+      {nota_arrastre}
       <li>Las revistas que no se pudieron leer aparecen en <b>«requieren
         revisión manual»</b>, con el motivo: servidor caído, dominio que ya no
         existe, o sitio que exige registrarse. Si tienen convocatoria abierta,
@@ -1987,10 +2022,8 @@ def construir_gracias():
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Listo · Panel de revistas académicas</title>
 <meta name="robots" content="noindex">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet">
+<link rel="preload" href="fonts/manrope-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/bricolage-grotesque-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
 <style>{CSS}
 .centro{{max-width:640px;margin:0 auto;padding:70px 22px;text-align:center}}
 .tilde{{width:74px;height:74px;border-radius:50%;background:var(--grad);

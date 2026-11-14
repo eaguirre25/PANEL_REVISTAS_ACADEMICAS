@@ -32,7 +32,10 @@ TIMEOUT = 20
 PALABRAS_CLAVE = re.compile(
     r'convocatoria|dossier|dosier|call for papers|llamado|'
     r'recepci[óo]n de (art[íi]culos|trabajos|manuscritos|colaboraciones)|'
-    r'n[úu]mero (tem[áa]tico|especial)|secci[óo]n tem[áa]tica|dossi[êe]',
+    r'n[úu]mero (tem[áa]tico|especial)|secci[óo]n tem[áa]tica|dossi[êe]|'
+    # Portugués (213 de las revistas del catálogo son de Brasil) e inglés.
+    r'chamada|edi[çc][ãa]o (especial|tem[áa]tica)|se[çc][ãa]o tem[áa]tica|'
+    r'n[úu]mero tem[áa]tico|special issue|open call',
     re.I)
 
 # Señales de que la página no es realmente el listado de anuncios.
@@ -42,7 +45,16 @@ BLOQUEO = re.compile(
 
 MESES = {'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4, 'mayo': 5, 'junio': 6,
          'julio': 7, 'agosto': 8, 'septiembre': 9, 'setiembre': 9, 'octubre': 10,
-         'noviembre': 11, 'diciembre': 12}
+         'noviembre': 11, 'diciembre': 12,
+         # Portugués
+         'janeiro': 1, 'fevereiro': 2, 'março': 3, 'marco': 3, 'maio': 5,
+         'junho': 6, 'setembro': 9, 'outubro': 10, 'novembro': 11,
+         'dezembro': 12,
+         # Inglés
+         'january': 1, 'february': 2, 'march': 3, 'april': 4, 'may': 5,
+         'june': 6, 'july': 7, 'august': 8, 'september': 9, 'october': 10,
+         'november': 11, 'december': 12}
+_MESES_RE = '|'.join(sorted(MESES, key=len, reverse=True))
 
 
 def base_ojs(url):
@@ -56,7 +68,11 @@ def base_ojs(url):
 CONTEXTO_PLAZO = re.compile(
     r'(fecha\s+l[íi]mite|fecha\s+de\s+cierre|hasta\s+el|plazo|cierre\s+de\s+la\s+convocatoria|'
     r'recepci[óo]n\s+(?:de\s+\w+\s+)?hasta|se\s+recibir[áa]n\s+hasta|env[íi]o\s+hasta|'
-    r'deadline|vence)', re.I)
+    r'deadline|vence|'
+    # Portugués e inglés
+    r'prazo|data\s+limite|data\s+final|at[ée]\s+(?:o\s+dia\s+)?|encerramento|'
+    r'prorrogad[oa]s?|submiss[õo]es\s+at[ée]|submission\s+deadline|'
+    r'due\s+(?:date|by)|closes?\s+on|until|no\s+later\s+than)', re.I)
 
 
 def _fechas_en(texto):
@@ -64,12 +80,21 @@ def _fechas_en(texto):
     t = texto.lower()
     out = []
 
-    # "15 de marzo de 2026"
-    for m in re.finditer(r'(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})', t):
+    # "15 de marzo de 2026" / "15 de março de 2026" / "15 março 2026"
+    for m in re.finditer(r'(\d{1,2})\s+(?:de\s+)?(' + _MESES_RE + r')\s+(?:de\s+|del\s+)?(\d{4})', t):
         mes = MESES.get(m.group(2))
         if mes:
             try:
                 out.append((m.start(), date(int(m.group(3)), mes, int(m.group(1)))))
+            except ValueError:
+                pass
+
+    # "March 15, 2026" / "March 15th 2026"
+    for m in re.finditer(r'\b(' + _MESES_RE + r')\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})', t):
+        mes = MESES.get(m.group(1))
+        if mes:
+            try:
+                out.append((m.start(), date(int(m.group(3)), mes, int(m.group(2)))))
             except ValueError:
                 pass
 
@@ -164,14 +189,16 @@ def parece_vieja(titulo):
 
 
 ES_DOSSIER = re.compile(
-    r'dossi[eê]r|dosier|n[úu]mero\s+(tem[áa]tico|especial|monogr[áa]fico)|'
-    r'secci[óo]n\s+tem[áa]tica|monogr[áa]fico|special\s+issue', re.I)
+    r'dossi[eê]r|dossi[êe]s?\b|dosier|n[úu]mero\s+(tem[áa]tico|especial|monogr[áa]fico)|'
+    r'secci[óo]n\s+tem[áa]tica|monogr[áa]fico|special\s+issue|'
+    r'edi[çc][ãa]o\s+(especial|tem[áa]tica)|se[çc][ãa]o\s+tem[áa]tica|'
+    r'n[úu]mero\s+tem[áa]tico', re.I)
 
 # El tema suele venir entrecomillado o después de dos puntos.
 ENTRECOMILLADO = re.compile(r'[«"“‘]([^»"”’]{12,140})[»"”’]')
 TRAS_DOS_PUNTOS = re.compile(
-    r'(?:dossi[eê]r|dosier|n[úu]mero\s+tem[áa]tico|monogr[áa]fico|'
-    r'secci[óo]n\s+tem[áa]tica|special\s+issue)[^:.\n]{0,40}[:.–—-]\s*'
+    r'(?:dossi[eê]r|dossi[êe]s?|dosier|n[úu]mero\s+tem[áa]tico|monogr[áa]fico|'
+    r'secci[óo]n\s+tem[áa]tica|se[çc][ãa]o\s+tem[áa]tica|special\s+issue)[^:.\n]{0,40}[:.–—-]\s*'
     r'([^.\n]{12,140})', re.I)
 
 
@@ -311,18 +338,90 @@ def parsear_anuncios(html, url_base):
     return anuncios
 
 
+# ── Lectura con reintentos ───────────────────────────────────────────────
+# De las revistas que no se pudieron leer, decenas fallaron por un tiempo
+# agotado o un 5xx pasajero. Se reintenta con espera creciente; un error de
+# certificado (SSLError) NO se reintenta: no se arregla esperando.
+REINTENTOS = 2
+ESPERAS = (1.5, 4.0)
+TRANSITORIOS = {429, 500, 502, 503, 504}
+
+
+def _get(sesion, url):
+    ultimo_error = None
+    r = None
+    for intento in range(REINTENTOS + 1):
+        try:
+            r = sesion.get(url, timeout=TIMEOUT, allow_redirects=True)
+        except requests.exceptions.SSLError:
+            raise
+        except (requests.Timeout, requests.ConnectionError) as e:
+            ultimo_error, r = e, None
+        else:
+            if r.status_code not in TRANSITORIOS:
+                return r
+            ultimo_error = None
+        if intento < REINTENTOS:
+            time.sleep(ESPERAS[min(intento, len(ESPERAS) - 1)])
+    if r is not None:
+        return r
+    raise ultimo_error
+
+
+# ── Respaldo: buscar los avisos desde la portada ─────────────────────────
+ENLACE_AVISOS = re.compile(
+    r'convocatorias?|call\s+for\s+papers|chamadas?|anuncios?|avisos?', re.I)
+
+
+def _enlace_a_avisos(sesion, sitio_url):
+    """
+    Si /announcement da 404, la revista puede tener los avisos en otra ruta.
+    Se busca en su portada un enlace del MISMO dominio que apunte a una
+    sección de avisos. Devuelve la URL o None.
+    """
+    from urllib.parse import urljoin, urlparse
+    try:
+        r = _get(sesion, sitio_url)
+    except requests.RequestException:
+        return None
+    if r.status_code != 200 or BLOQUEO.search(r.text[:4000]):
+        return None
+    dominio = urlparse(r.url).netloc
+    soup = BeautifulSoup(r.content, 'html.parser')
+    for a in soup.find_all('a', href=True):
+        destino = urljoin(r.url, a['href'])
+        if urlparse(destino).netloc != dominio or '/announcement/view/' in destino:
+            continue
+        ruta = urlparse(destino).path.lower()
+        texto = ' '.join(a.stripped_strings)
+        if ruta.rstrip('/').endswith('/announcement') or (
+                ENLACE_AVISOS.search(texto) and len(texto) < 60
+                and '/article/' not in ruta and '/issue/' not in ruta):
+            return destino
+    return None
+
+
 def revisar_revista(sesion, revista):
     """Busca convocatorias en una revista. Devuelve (estado, [convocatorias])."""
     url = base_ojs(revista['sitio_url']) + '/announcement'
     try:
-        r = sesion.get(url, timeout=TIMEOUT, allow_redirects=True)
+        r = _get(sesion, url)
     except requests.TooManyRedirects:
         return 'redirecciones', []
     except requests.RequestException as e:
         return f'inaccesible ({type(e).__name__})', []
 
     if r.status_code == 404:
-        return 'sin pagina de anuncios', []
+        alterna = _enlace_a_avisos(sesion, revista['sitio_url'])
+        if not alterna:
+            return 'sin pagina de anuncios', []
+        try:
+            r = _get(sesion, alterna)
+        except requests.RequestException:
+            return 'sin pagina de anuncios', []
+        if r.status_code != 200:
+            return 'sin pagina de anuncios', []
+        url = alterna
     if r.status_code != 200:
         return f'http {r.status_code}', []
     if '/login' in r.url.lower():

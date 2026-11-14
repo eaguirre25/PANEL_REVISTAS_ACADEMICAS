@@ -146,6 +146,22 @@ En Linux/macOS, vía cron:
 
 ---
 
+## Pruebas
+
+```bash
+pip install -r requirements-ci.txt
+python -m pytest -q
+```
+
+Cubren la extracción de fechas y dossiers (español, portugués e inglés), el
+nivel CONICET, la memoria de primera detección, la fusión de duplicados, los
+reintentos del rastreo, el arrastre de convocatorias y el boletín. La corrida
+semanal de GitHub Actions las ejecuta antes de rastrear: si una falla, no se
+publica nada.
+
+**Interfaz oficial:** el sitio estático de `docs/`. La app de Streamlit
+(`app.py`) es solo para uso local.
+
 ## Cómo funciona
 
 ```
