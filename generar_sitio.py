@@ -15,6 +15,7 @@ import json
 import logging
 from datetime import date, datetime
 
+import deteccion
 from database import conectar, contar, obtener_convocatorias_cerradas
 
 logger = logging.getLogger(__name__)
@@ -144,6 +145,21 @@ def _linea_base():
     return valor
 
 
+REGIONAL = 'Iberoamérica (regional)'
+
+
+def _pais_norm(p):
+    """
+    Un país por revista. Algunos orígenes traen «Argentina/regional» o
+    «Brasil/Portugal», que partían el filtro por país y inflaban el conteo; y
+    «Iberoamérica (OEI)» es un organismo, no un país.
+    """
+    p = (p or 'Argentina').strip()
+    if p.lower().startswith('iberoam'):
+        return REGIONAL
+    return p.split('/')[0].strip()
+
+
 def reunir_datos():
     conn = conectar()
 
@@ -185,6 +201,13 @@ def reunir_datos():
 
     cerradas = obtener_convocatorias_cerradas(meses=8)
 
+    for fila in revistas + convocatorias + cerradas:
+        fila['pais'] = _pais_norm(fila.get('pais'))
+
+    # La base se reconstruye en cada corrida de CI: la primera detección real
+    # se toma de la memoria versionada (ver deteccion.py), no de la base.
+    deteccion.aplicar(convocatorias, persistir=True)
+
     linea_base = _linea_base()
     for c in convocatorias:
         c['disc'] = disciplinas(c['revista'], c['titulo'], c['tema'])
@@ -202,7 +225,7 @@ def reunir_datos():
         'revistas': len(revistas),
         'nbra': sum(1 for r in revistas if r['origen'] == 'NBRA'),
         'externas': sum(1 for r in revistas if r['origen'] == 'externa'),
-        'paises': len({r['pais'] for r in revistas}),
+        'paises': len({r['pais'] for r in revistas if r['pais'] != REGIONAL}),
         'convocatorias': len(convocatorias),
         'dossiers': sum(1 for c in convocatorias if c['es_dossier']),
         'con_tema': sum(1 for c in convocatorias if c['tema']),
@@ -255,10 +278,13 @@ CSS = """
 *,*::before,*::after{box-sizing:border-box}
 :root{
   --a1:#0891b2; --a2:#059669; --a3:#7c3aed;
-  --grad:linear-gradient(135deg,var(--a1),var(--a2));
+  /* Texto sobre fondo claro y degradado con texto blanco: --a1 y --a2 dan
+     3,6:1 con blanco; estos tonos dan más de 5:1 en ambos temas. */
+  --a1Txt:#0e7490;
+  --grad:linear-gradient(135deg,#0e7490,#047857);
   --pag:#fbfbfe; --sup:rgba(255,255,255,.72); --sup2:rgba(255,255,255,.62);
   --borde:rgba(255,255,255,.75); --borde2:rgba(24,20,37,.12);
-  --fg:#181425; --fg2:#4b5265; --fg3:#6b7280; --fg4:#9ca3af;
+  --fg:#181425; --fg2:#4b5265; --fg3:#596273; --fg4:#6b7280;
   --chip:#eef2f6; --chipFg:#475569;
   --sombra:0 6px 20px rgba(15,23,42,.06);
   --sombraAlta:0 16px 40px rgba(8,145,178,.28);
@@ -272,10 +298,10 @@ CSS = """
   --ojoBg:rgba(245,158,11,.10); --reabreBg:rgba(21,128,61,.10);
 }
 :root[data-theme=dark]{
-  --a1:#22d3ee; --a2:#34d399; --a3:#a78bfa;
+  --a1:#22d3ee; --a2:#34d399; --a3:#a78bfa; --a1Txt:#22d3ee;
   --pag:#0b0d12; --sup:rgba(30,35,45,.72); --sup2:rgba(30,35,45,.55);
   --borde:rgba(255,255,255,.09); --borde2:rgba(255,255,255,.14);
-  --fg:#eceef4; --fg2:#b3bccb; --fg3:#8e99ab; --fg4:#6b7688;
+  --fg:#eceef4; --fg2:#b3bccb; --fg3:#8e99ab; --fg4:#7c889c;
   --chip:rgba(255,255,255,.08); --chipFg:#b3bccb;
   --sombra:0 6px 20px rgba(0,0,0,.35);
   --sombraAlta:0 16px 40px rgba(0,0,0,.5);
@@ -286,10 +312,10 @@ CSS = """
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme=light]){
-    --a1:#22d3ee; --a2:#34d399; --a3:#a78bfa;
+    --a1:#22d3ee; --a2:#34d399; --a3:#a78bfa; --a1Txt:#22d3ee;
     --pag:#0b0d12; --sup:rgba(30,35,45,.72); --sup2:rgba(30,35,45,.55);
     --borde:rgba(255,255,255,.09); --borde2:rgba(255,255,255,.14);
-    --fg:#eceef4; --fg2:#b3bccb; --fg3:#8e99ab; --fg4:#6b7688;
+    --fg:#eceef4; --fg2:#b3bccb; --fg3:#8e99ab; --fg4:#7c889c;
     --chip:rgba(255,255,255,.08); --chipFg:#b3bccb;
     --sombra:0 6px 20px rgba(0,0,0,.35);
     --sombraAlta:0 16px 40px rgba(0,0,0,.5);
@@ -357,7 +383,7 @@ h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;
   border-radius:14px;padding:15px 19px;margin:0 0 20px}
 .ojo b{color:var(--amb);letter-spacing:.02em}
 .ojo p{margin:6px 0 0;color:var(--fg2);font-size:14.5px;line-height:1.55}
-.firma a,.tarj a,.rcard a{color:var(--a1);text-decoration:none;font-weight:650}
+.firma a,.tarj a,.rcard a{color:var(--a1Txt);text-decoration:none;font-weight:650}
 .firma a:hover,.tarj a:hover,.rcard a:hover{text-decoration:underline}
 #tema{background:var(--sup2);border:1px solid var(--borde);color:var(--fg);
   border-radius:11px;width:44px;height:44px;font-size:17px;cursor:pointer;
@@ -400,7 +426,7 @@ nav .env{padding:10px 22px;display:flex;gap:14px;flex-wrap:wrap;
 .segs{display:flex;gap:4px;background:var(--chip);padding:4px;
   border-radius:12px}
 .segs button{background:none;color:var(--fg2);border:0;border-radius:9px;
-  padding:9px 16px;font-size:14.5px;font-weight:650;cursor:pointer;
+  padding:12px 16px;min-height:44px;font-size:14.5px;font-weight:650;cursor:pointer;
   font-family:inherit;white-space:nowrap}
 .segs button[aria-selected=true]{background:var(--grad);color:#fff}
 input[type=search],select{background:var(--sup);border:1px solid var(--borde2);
@@ -446,7 +472,7 @@ main{padding:24px 0 80px}
 .tit{margin-top:5px;line-height:1.5;color:var(--fg2)}
 .tema{margin-top:10px;padding:11px 14px;background:rgba(124,58,237,.09);
   border-radius:10px;font-size:14.5px;line-height:1.5}
-.tema b{color:var(--a1)}
+.tema b{color:var(--a1Txt)}
 .meta{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .meta>span.fecha{color:var(--fg3);font-size:12.5px}
 .pais{color:var(--fg4);font-size:12px}
@@ -461,7 +487,7 @@ main{padding:24px 0 80px}
 a.cal{display:inline-flex;align-items:center;gap:6px;font-size:13px;
   color:var(--fg2)!important;border:1px solid var(--borde2);border-radius:9px;
   padding:6px 12px;background:var(--sup2)}
-a.cal:hover{color:var(--a1)!important;border-color:var(--a1);
+a.cal:hover{color:var(--a1Txt)!important;border-color:var(--a1);
   text-decoration:none!important}
 a.cal svg{flex:none}
 /* Lo que sigue vigente pese al cierre: reapertura o recepción abierta. */
@@ -482,12 +508,12 @@ a.cal svg{flex:none}
 .masbtn{display:block;margin:18px auto 0;background:var(--sup);
   border:1px solid var(--borde2);border-radius:11px;padding:11px 22px;
   font-size:14px;font-weight:650;font-family:inherit;cursor:pointer;
-  color:var(--a1)}
+  color:var(--a1Txt)}
 
 /* ── boletín ─────────────────────────────────────────────────────── */
 .boletin{margin:26px 0 30px;padding:26px 28px;border-radius:20px;
   background:var(--grad);color:#fff;box-shadow:var(--sombraAlta)}
-.boletin h3{margin:0 0 8px;
+.boletin h2{margin:0 0 8px;
   font-family:'Bricolage Grotesque',system-ui,sans-serif;font-size:21px}
 .boletin p{margin:0 0 16px;opacity:.94;max-width:62ch;font-size:15px}
 .boletin a{color:#fff;text-decoration:underline}
@@ -498,7 +524,7 @@ a.cal svg{flex:none}
   font-family:inherit;color:#181425;min-height:48px}
 .susForm input:focus-visible{outline:3px solid rgba(255,255,255,.6);
   outline-offset:1px}
-.susForm button{background:#fff;color:var(--a1);border:0;border-radius:11px;
+.susForm button{background:#fff;color:#0e7490;border:0;border-radius:11px;
   padding:13px 26px;font-size:15px;font-weight:750;cursor:pointer;
   font-family:inherit;min-height:48px;white-space:nowrap}
 .susForm button:hover{transform:translateY(-1px)}
@@ -507,7 +533,7 @@ a.cal svg{flex:none}
 
 .cobertura{margin-top:32px;background:var(--sup2);border:1px solid var(--borde);
   border-radius:16px;padding:22px 24px}
-.cobertura h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;
+.cobertura h2{font-family:'Bricolage Grotesque',system-ui,sans-serif;
   font-size:16px;margin:0 0 14px}
 .barra{display:flex;width:100%;height:14px;border-radius:8px;overflow:hidden;
   background:var(--chip)}
@@ -519,14 +545,14 @@ a.cal svg{flex:none}
 .aviso{background:var(--sup2);border:1px solid var(--borde);
   border-left:4px solid #b45309;border-radius:16px;padding:22px 24px;
   margin:28px 0}
-.aviso h3{margin:0 0 14px;font-size:15.5px;
+.aviso h2{margin:0 0 14px;font-size:15.5px;
   font-family:'Bricolage Grotesque',system-ui,sans-serif}
 .aviso ol{margin:0;padding-left:20px}
 .aviso li{margin-bottom:10px;color:var(--fg2);line-height:1.55}
 .aviso li b{color:var(--fg)}
 footer{border-top:1px solid var(--borde2);color:var(--fg3);font-size:13.5px;
   padding:26px 0 50px;line-height:1.6}
-footer a{color:var(--a1)}
+footer a{color:var(--a1Txt)}
 /* !important porque hay reglas posteriores con display propio (.expo, .facetas):
    sin esto ganaban por orden de aparición y el bloque seguía ocupando lugar
    aun estando «oculto». */
@@ -565,11 +591,11 @@ footer a{color:var(--a1)}
 .fchip{display:inline-flex;align-items:center;gap:7px;background:var(--sup);
   border:1px solid var(--a1);color:var(--fg);border-radius:20px;
   padding:5px 6px 5px 13px;font-size:13px;font-weight:600}
-.fchip button{background:var(--chip);border:0;border-radius:50%;width:22px;
-  height:22px;cursor:pointer;color:var(--fg2);font-size:14px;line-height:1;
+.fchip button{background:var(--chip);border:0;border-radius:50%;width:28px;
+  height:28px;cursor:pointer;color:var(--fg2);font-size:14px;line-height:1;
   font-family:inherit;display:flex;align-items:center;justify-content:center}
 .fchip button:hover{background:#dc2626;color:#fff}
-.limpiar{background:none;border:0;color:var(--a1);font-family:inherit;
+.limpiar{background:none;border:0;color:var(--a1Txt);font-family:inherit;
   font-size:13px;font-weight:700;cursor:pointer;padding:6px 10px;
   border-radius:8px;min-height:36px}
 .limpiar:hover{background:var(--chip)}
@@ -588,20 +614,20 @@ mark{background:var(--markBg);color:var(--fg);border-radius:3px;
 /* Estado vacío: decir qué quitar es más útil que «sin resultados». */
 .vacio{background:var(--sup2);border:1px dashed var(--borde2);
   border-radius:16px;padding:30px 26px;text-align:center}
-.vacio h3{margin:0 0 8px;font-size:17px;
+.vacio h2{margin:0 0 8px;font-size:17px;
   font-family:'Bricolage Grotesque',system-ui,sans-serif}
 .vacio p{margin:0 0 16px;color:var(--fg2);font-size:14.5px}
 .vacio .acc{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .vacio button{background:var(--sup);border:1px solid var(--borde2);
   border-radius:10px;padding:10px 18px;font-family:inherit;font-size:14px;
-  font-weight:650;cursor:pointer;color:var(--a1);min-height:44px}
+  font-weight:650;cursor:pointer;color:var(--a1Txt);min-height:44px}
 
 /* Guardar: la selección vive en el navegador, sin cuenta ni registro. */
 .guardar{display:inline-flex;align-items:center;gap:6px;font-size:13px;
   background:var(--sup2);border:1px solid var(--borde2);border-radius:9px;
   padding:6px 12px;cursor:pointer;font-family:inherit;color:var(--fg2);
   min-height:36px}
-.guardar:hover{border-color:var(--a1);color:var(--a1)}
+.guardar:hover{border-color:var(--a1);color:var(--a1Txt)}
 .guardar[aria-pressed=true]{background:rgba(245,158,11,.14);
   border-color:#d97706;color:var(--amb)}
 .reportar{font-size:12.5px;color:var(--fg4)!important;font-weight:500!important}
@@ -612,7 +638,7 @@ mark{background:var(--markBg);color:var(--fg);border-radius:3px;
 .notaGuard b{color:var(--fg)}
 .expo button{background:var(--sup);border:1px solid var(--borde2);
   border-radius:10px;padding:10px 16px;font-family:inherit;font-size:13.5px;
-  font-weight:650;cursor:pointer;color:var(--a1);min-height:44px}
+  font-weight:650;cursor:pointer;color:var(--a1Txt);min-height:44px}
 .expo button:hover{border-color:var(--a1)}
 
 /* Verificación por tarjeta: más útil que repetir la advertencia general. */
@@ -629,7 +655,7 @@ mark{background:var(--markBg);color:var(--fg);border-radius:3px;
   flex-wrap:wrap;background:var(--grad);color:#fff;border-radius:14px;
   padding:15px 20px;margin:16px 0;box-shadow:var(--sombra)}
 .franja p{margin:0;font-size:14.5px;font-weight:600}
-.franja a{background:#fff;color:var(--a1);text-decoration:none;font-weight:750;
+.franja a{background:#fff;color:#0e7490;text-decoration:none;font-weight:750;
   border-radius:10px;padding:9px 18px;font-size:14px;white-space:nowrap}
 
 .saltar{position:absolute;left:-9999px;background:var(--a1);color:#fff;
@@ -687,7 +713,7 @@ mark{background:var(--markBg);color:var(--fg);border-radius:3px;
   .verMas{display:flex;align-items:center;justify-content:center;gap:7px;
     width:100%;background:var(--sup);border:1px solid var(--borde2);
     border-radius:11px;padding:12px 15px;font-family:inherit;font-size:14px;
-    font-weight:700;color:var(--a1);cursor:pointer;min-height:44px;
+    font-weight:700;color:var(--a1Txt);cursor:pointer;min-height:44px;
     margin:0 0 14px}
   .verMas::after{content:"▾";font-size:11px}
   .verMas[aria-expanded=true]::after{content:"▴"}
@@ -764,6 +790,9 @@ function plazoPartes(d){
   if(d===0) return ['hoy','cierra'];
   return [String(d), d===1?'día':'días'];
 }
+function avisar(m){ const e=document.getElementById('avisoAcc'); if(e){ e.textContent=m;
+  setTimeout(()=>{ e.textContent=''; },7000); } }
+function urlOk(u){ return /^https?:[/][/]/i.test(String(u||'')); }
 function esc(s){
   return String(s==null?'':s).replace(/[&<>"']/g,
     c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -821,7 +850,7 @@ function fechaLeg(f){
 }
 function badges(r){
   const b=[];
-  if(r.nivel_conicet===1) b.push(['Nivel 1','#fef3c7','#a16207','']);
+  if(r.nivel_conicet===1) b.push(['Nivel 1','#fef3c7','#92400e','']);
   else if(r.nivel_conicet===2) b.push(['Nivel 2','','','']);
   if(r.en_scopus){
     const activa = String(r.scopus_estado||'').toLowerCase()==='active';
@@ -940,7 +969,7 @@ function tarjetaConv(c, ts){
     +marcas.join('')+badges(c).map(chip).join('')
     +'<span class="pais">'+esc(c.pais)+'</span></div>';
   const acciones=[];
-  if(c.url) acciones.push('<a href="'+esc(c.url)
+  if(urlOk(c.url)) acciones.push('<a href="'+esc(c.url)
     +'" target="_blank" rel="noopener">Abrir convocatoria →</a>');
   acciones.push(botonGuardar(c));
   const cal = botonCalendario(c);
@@ -963,7 +992,7 @@ function tarjetaPerm(r){
     +'<span class="pais">'+esc(r.pais)+'</span></div>';
   if(frase) h+='<div class="cita">…'+esc(frase)+'…</div>';
   const ls=[];
-  if(r.sitio_url) ls.push('<a href="'+esc(r.sitio_url)
+  if(urlOk(r.sitio_url)) ls.push('<a href="'+esc(r.sitio_url)
     +'" target="_blank" rel="noopener">Ir a la revista →</a>');
   if(fuente && /^https?:/.test(fuente)) ls.push('<a href="'+esc(fuente)
     +'" target="_blank" rel="noopener">Ver la fuente →</a>');
@@ -1000,7 +1029,7 @@ function tarjetaCerrada(c){
     +(hace?' · '+hace:'')+'</span>'+badges(c).map(chip).join('')
     +'<span class="pais">'+esc(c.pais)+'</span></div>';
   const acc=[];
-  if(c.url) acc.push('<a href="'+esc(c.url)
+  if(urlOk(c.url)) acc.push('<a href="'+esc(c.url)
     +'" target="_blank" rel="noopener">Ver la convocatoria →</a>');
   acc.push(botonGuardar(c));
   h+='<div class="acciones">'+acc.join('')+'</div>';
@@ -1017,7 +1046,7 @@ function tarjetaRev(r, manual, ts){
     +badges(r).map(chip).join('')+'</div>';
   h+='<div class="inst">'+resaltar(r.institucion||'—', ts)+'</div>';
   if(!manual) h+='<div class="issn">ISSN '+resaltar(issn, ts)+'</div>';
-  if(r.sitio_url) h+='<a href="'+esc(r.sitio_url)
+  if(urlOk(r.sitio_url)) h+='<a href="'+esc(r.sitio_url)
     +'" target="_blank" rel="noopener">Ir al sitio →</a>';
   if(r.ultima_revision_ok)
     h+='<div class="verif">✓ Leída el '+esc(fechaLeg(r.ultima_revision_ok))+'</div>';
@@ -1287,7 +1316,7 @@ function vacio(msg){
   const sug=[];
   if(ultimoFiltro) sug.push('<button id="quitarUlt">Quitar el último filtro</button>');
   sug.push('<button id="limpiarVacio">Limpiar todos los filtros</button>');
-  return '<div class="vacio"><h3>No encontramos nada con esos criterios</h3>'
+  return '<div class="vacio"><h2>No encontramos nada con esos criterios</h2>'
     +'<p>'+esc(msg)+'</p><div class="acc">'+sug.join('')+'</div></div>';
 }
 
@@ -1325,7 +1354,7 @@ function pinta(){
 
     if(!l.length){
       cont.innerHTML = seccion==='guard' && !guardadas.length
-        ? '<div class="vacio"><h3>Todavía no guardaste ninguna</h3><p>Tocá '
+        ? '<div class="vacio"><h2>Todavía no guardaste ninguna</h2><p>Tocá '
           +'<b>☆ Guardar</b> en cualquier convocatoria y va a quedar acá, en '
           +'este navegador. No hace falta crear una cuenta.</p></div>'
         : vacio('Probá quitar el cuartil, ampliar el plazo o usar una palabra '
@@ -1496,7 +1525,7 @@ function plegarICS(linea){
 
 function exportarICS(){
   const l=convGuardadas().filter(c=>c.fecha_cierre);
-  if(!l.length){ alert('Ninguna de las guardadas declara fecha de cierre.'); return; }
+  if(!l.length){ avisar('Ninguna de las guardadas declara fecha de cierre.'); return; }
   const dd=n=>String(n).padStart(2,'0');
   const sello=new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
   const ev=l.map((c,i)=>{
@@ -1620,7 +1649,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('expIcs').onclick=exportarICS;
   document.getElementById('expTxt').onclick=copiarLista;
   document.getElementById('expAbrir').onclick=()=>{
-    const l=convGuardadas().filter(c=>c.url);
+    const l=convGuardadas().filter(c=>urlOk(c.url));
     if(!l.length) return;
     if(l.length>8 && !confirm('Se van a abrir '+l.length+' pestañas. ¿Seguimos?'))
       return;
@@ -1705,7 +1734,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     .catch(e=>{
       document.getElementById('conteo').textContent='';
       document.getElementById('lista').innerHTML =
-        '<div class="aviso"><h3>No se pudieron cargar los datos</h3><p>'
+        '<div class="aviso"><h2>No se pudieron cargar los datos</h2><p>'
         +esc(e.message)+'</p><p>Si abriste este archivo con doble clic '
         +'(<code>file://</code>), el navegador bloquea la lectura de '
         +'<code>datos.json</code>. Vela publicada, o servila con '
@@ -1725,6 +1754,11 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
 <meta name="description" content="Convocatorias y llamados a dossier abiertos
  en {stats['revistas']} revistas de ciencias sociales y humanidades de
  {stats['paises']} países de Iberoamérica.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Panel de revistas académicas iberoamericanas">
+<meta property="og:description" content="Convocatorias y llamados a dossier en {stats['revistas']} revistas de ciencias sociales y humanidades.">
+<meta property="og:url" content="{SITIO}/">
+<link rel="canonical" href="{SITIO}/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;600;700;800&display=swap"
@@ -1733,6 +1767,10 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
 </head><body>
 
 <a class="saltar" href="#lista">Saltar a los resultados</a>
+<noscript><div class="aviso" style="margin:16px"><h2>Este panel necesita JavaScript</h2>
+<p>Las convocatorias se cargan desde un archivo de datos al abrir la página. Sin JavaScript no
+podemos mostrarlas, pero podés descargar los datos completos en
+<a href="datos.json">datos.json</a> o ver el código en <a href="{REPO}">GitHub</a>.</p></div></noscript>
 <div class="bgfx"><div class="b1"></div><div class="b2"></div>
   <div class="b3"></div><div class="b4"></div></div>
 <div class="wrap">
@@ -1741,7 +1779,7 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
   <div class="hcab">
     <div>
       <p class="sello"><span class="punto"></span>
-        Última actualización automática: <b>{stats['generado']}</b></p>
+        Datos actualizados cada lunes · última actualización: <b>{stats['generado']}</b></p>
       <h1>Panel de revistas académicas iberoamericanas</h1>
     </div>
     <button id="tema" title="Cambiar entre tema claro y oscuro"
@@ -1755,15 +1793,13 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
   <p class="firma">Desarrollado por <b>Elías Aguirre</b>. Comentarios,
     feedback y consultas a <a id="contacto" href="#">(escribir)</a>.</p>
   <div class="ojo">
-    <b>¡IMPORTANTE! Chequeá e inspeccioná la información publicada.</b>
-    <p>La idea es facilitar —no reemplazar— la actividad propia de
-      búsqueda y revisión. Los datos se extraen automáticamente y pueden
-      estar incompletos o desactualizados: verificá siempre en el sitio de
-      la revista antes de preparar un envío.</p>
+    <b>Verificá cada convocatoria en el sitio de la revista antes de enviar tu texto.</b>
+    <p>Este panel facilita la búsqueda, no la reemplaza: los datos se extraen
+      automáticamente y pueden estar incompletos o desactualizados.</p>
   </div>
 
   <div class="franja">
-    <p>¿Querés recibir las nuevas convocatorias cada lunes?</p>
+    <p>¿Querés recibir las nuevas convocatorias cada martes?</p>
     <a href="#boletin">Suscribirme</a>
   </div>
 
@@ -1817,6 +1853,7 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
 
   <div class="barrares">
     <p class="conteo" id="conteo" role="status" aria-live="polite">Cargando datos…</p>
+    <p class="conteo" id="avisoAcc" role="status" aria-live="polite"></p>
     <div class="ordenar">
       <label for="fOrden">Ordenar por</label>
       <select id="fOrden">
@@ -1847,8 +1884,8 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
   <div id="lista" role="tabpanel" tabindex="-1"></div>
 
   <section class="boletin" id="boletin">
-    <h3>✉️ Enterate de cada convocatoria, sin buscarla</h3>
-    <p>Todos los lunes te llega un correo con las convocatorias que están por
+    <h2>✉️ Enterate de cada convocatoria, sin buscarla</h2>
+    <p>Todos los martes te llega un correo con las convocatorias que están por
       vencer, las nuevas de la semana y el tema de cada dossier. Dejás tu
       nombre y tu correo, nada más.</p>
     {formulario}
@@ -1858,7 +1895,7 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
   </section>
 
   <div class="cobertura oculto" id="cobertura">
-    <h3>Qué se pudo revisar y qué no</h3>
+    <h2>Qué se pudo revisar y qué no</h2>
     <p style="margin:0 0 14px;color:var(--fg2);font-size:14px;max-width:76ch;">
       El rastreador entra cada semana a la página de avisos de cada revista.
       Estas seis categorías son excluyentes y suman las
@@ -1866,7 +1903,7 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
 
     <div class="desglose">
       <div class="dl" data-f="conconv"><b>{stats['rev_con_conv']}</b>
-        <span>tienen convocatoria abierta</span></div>
+        <span>se leyeron y tienen una convocatoria detectada en su página de avisos</span></div>
       <div class="dl" data-f="sinconv"><b>{stats['rev_sin_conv']}</b>
         <span>se leyeron y hoy no tienen ninguna &mdash; pueden publicar una
           la semana que viene</span></div>
@@ -1888,7 +1925,7 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
   </div>
 
   <div class="aviso" id="limitaciones">
-    <h3>Antes de confiar en esto para un envío</h3>
+    <h2>Antes de confiar en esto para un envío</h2>
     <ol>
       <li>Solo <b>{stats['con_fecha']} de {stats['convocatorias']}</b>
         convocatorias declaran su fecha de cierre en un formato legible. Las
@@ -1914,8 +1951,10 @@ def construir_html(revistas, convocatorias, cerradas, estados, stats):
         clasifica <i>las bases de indización</i>, no las revistas una por una.
         La resolución advierte que «dentro de un mismo nivel conviven revistas
         que difieren entre sí respecto de su calidad».</li>
-      <li>Para las revistas de fuera de Argentina, «sin nivel» significa que no
-        se pudo verificar, <b>no</b> que no estén indizadas.</li>
+      <li>«Sin nivel» corresponde a revistas que no son del Núcleo Básico y no
+        están en Scopus ni en SciELO.org: con estos datos no se les puede
+        asignar un nivel. <b>No</b> significa que no estén indizadas en otras
+        bases, ni que no se haya podido revisar su sitio.</li>
       <li>De las <b>{stats['revistas']}</b> revistas del catálogo, se sigue la
         página de convocatorias de <b>{stats['con_seguimiento']}</b>. Las otras
         <b>{stats['solo_referencia']}</b> —en su mayoría incorporadas del
@@ -1970,7 +2009,7 @@ def construir_gracias():
   <div class="tilde">✓</div>
   <h1>Listo, ya estás suscriptx</h1>
   <p>Te va a llegar un correo de confirmación en unos minutos, y a partir del
-    <b>próximo lunes</b> el resumen semanal de convocatorias.</p>
+    <b>próximo martes</b> el resumen semanal de convocatorias.</p>
   <p style="font-size:14.5px;color:var(--fg3);">Si no lo ves, revisá la carpeta
     de spam y marcalo como correo deseado: así los siguientes te llegan a la
     bandeja de entrada.</p>
