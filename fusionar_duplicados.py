@@ -74,8 +74,17 @@ def detectar():
             continue
         nbra = [r for r in rs if (r['origen'] or 'NBRA') == 'NBRA']
         conservar = (nbra or sorted(rs, key=lambda r: r['id']))[0]
+        issn_c = {_norm(conservar['issn_impreso']), _norm(conservar['issn_online'])} - {''}
         for d in rs:
-            if d['id'] != conservar['id']:
+            if d['id'] == conservar['id']:
+                continue
+            issn_d = {_norm(d['issn_impreso']), _norm(d['issn_online'])} - {''}
+            # Si ambas filas traen ISSN y no comparten ninguno, son revistas
+            # distintas con el mismo título («Fronteiras» de Anápolis y la de
+            # la UFFS): no se fusionan, se reportan para revisión manual.
+            if issn_c and issn_d and not (issn_c & issn_d):
+                sospechosos.append(('; '.join(sorted(issn_c | issn_d)), conservar, d))
+            else:
                 grupos.append((conservar, [d]))
     return grupos, sospechosos
 

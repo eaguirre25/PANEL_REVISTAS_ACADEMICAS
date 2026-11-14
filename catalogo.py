@@ -35,7 +35,15 @@ def _sesion():
 
 def listar_fichas(sesion):
     """Devuelve [(nombre, url_ficha), ...] de las 429 revistas del NBRA."""
-    r = sesion.get(INDICE, timeout=TIMEOUT)
+    r = None
+    for intento, espera in enumerate((0, 5, 20, 60)):
+        time.sleep(espera)
+        try:
+            r = sesion.get(INDICE, timeout=TIMEOUT)
+            if r.status_code not in (429, 500, 502, 503, 504):
+                break
+        except requests.RequestException as e:
+            logger.warning("Índice NBRA, intento %d: %s", intento + 1, e)
     r.raise_for_status()
     soup = BeautifulSoup(r.content, 'html.parser')
 
@@ -115,13 +123,36 @@ def leer_ficha(sesion, nombre, url):
                 area=area, institucion=institucion)
 
 
+def sembrar_desde_publicado():
+    """Carga el NBRA desde docs/datos.json cuando CAICYT no responde."""
+    from continuidad import cargar_datos_publicados
+    datos = cargar_datos_publicados() or {}
+    n = 0
+    for r in datos.get('revistas', []):
+        if (r.get('origen') or 'NBRA') != 'NBRA':
+            continue
+        guardar_revista(r['nombre'], r.get('ficha_url'), r.get('sitio_url'),
+                        r.get('issn_impreso'), r.get('issn_online'),
+                        AREA_OBJETIVO, r.get('institucion') or '')
+        n += 1
+    registrar_actualizacion("catalogo", f"CAICYT no respondió: {n} revistas del NBRA tomadas de lo publicado")
+    return dict(fichas=0, leidas=0, guardadas=n, nuevas=0, actualizadas=n,
+                con_sitio=0, desde_publicado=True)
+
+
 def actualizar_catalogo(solo_sociales=True, workers=6, progreso=None):
     """Descarga el catálogo completo y lo guarda. Devuelve un resumen."""
     init_db()
     sesion = _sesion()
 
     logger.info("Descargando índice del NBRA...")
-    fichas = listar_fichas(sesion)
+    try:
+        fichas = listar_fichas(sesion)
+    except Exception as e:
+        # CAICYT caído: se siembra el Núcleo Básico desde lo ya publicado para
+        # no perder ~300 revistas por una caída ajena (pasó el 09/11/2026).
+        logger.error("No se pudo leer el índice del NBRA (%s); uso lo publicado.", e)
+        return sembrar_desde_publicado()
     logger.info("Fichas encontradas: %d", len(fichas))
 
     resultados = []

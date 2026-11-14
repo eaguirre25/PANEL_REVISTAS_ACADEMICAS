@@ -95,3 +95,18 @@ def test_no_sigue_enlaces_de_otro_dominio():
     })
     assert cv.revisar_revista(s, {'sitio_url': 'https://rev.test/'})[0] == \
         'sin pagina de anuncios'
+
+
+def test_catalogo_siembra_desde_publicado_si_caicyt_cae(tmp_path, monkeypatch):
+    import json, database, catalogo, continuidad
+    monkeypatch.setattr(database, 'DB_PATH', tmp_path / 'c.db')
+    database.init_db()
+    monkeypatch.setattr(continuidad, 'cargar_datos_publicados', lambda ruta=None: {
+        'revistas': [{'nombre': 'Rev A', 'origen': 'NBRA', 'sitio_url': 'https://a.test/'},
+                     {'nombre': 'Rev B', 'origen': 'externa'}]})
+    monkeypatch.setattr(catalogo, 'listar_fichas',
+                        lambda s: (_ for _ in ()).throw(RuntimeError('500')))
+    r = catalogo.actualizar_catalogo()
+    assert r['guardadas'] == 1 and r['desde_publicado']
+    nombres = [x['nombre'] for x in database.conectar().execute('SELECT nombre FROM revistas')]
+    assert nombres == ['Rev A']
