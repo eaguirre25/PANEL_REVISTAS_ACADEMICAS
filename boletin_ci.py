@@ -84,6 +84,13 @@ def main():
     for nombre, email in destinatarios:
         agregar_suscriptor(nombre, email)
 
+    if os.environ.get("BOLETIN_FUENTE") == "publicado":
+        from continuidad import cargar_publicado
+        if not cargar_publicado():
+            raise RuntimeError(
+                "docs/datos.json no tiene convocatorias: no se envía un "
+                "boletín vacío. Revisá la última corrida de actualización.")
+
     resultado = enviar_boletin()
     print(f"Boletín semanal: {resultado['enviados']} enviado(s)")
     for error in resultado["errores"]:

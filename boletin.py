@@ -23,6 +23,8 @@ from datetime import date, datetime, timedelta
 from email.message import EmailMessage
 from html import escape
 
+import continuidad
+import deteccion
 from database import (init_db, obtener_convocatorias, obtener_suscriptores,
                       marcar_envio, registrar_actualizacion, conectar)
 
@@ -45,9 +47,35 @@ def _dias(fecha_iso):
         return None
 
 
+def _fuente_de_datos():
+    """
+    (convocatorias, cantidad de revistas de recepción permanente).
+
+    En GitHub Actions el boletín NO vuelve a rastrear ~1.000 sitios: lee el
+    datos.json que publicó la corrida del lunes (BOLETIN_FUENTE=publicado). En
+    una instalación local sigue leyendo la base.
+    """
+    if os.environ.get('BOLETIN_FUENTE') == 'publicado':
+        datos = continuidad.cargar_datos_publicados()
+        hoy = date.today().isoformat()
+        convocatorias = [c for c in datos.get('convocatorias') or []
+                         if not c.get('fecha_cierre') or c['fecha_cierre'] >= hoy]
+        permanentes = (datos.get('estadisticas') or {}).get('permanentes', 0)
+        return convocatorias, permanentes
+    convocatorias = obtener_convocatorias()
+    conn = conectar()
+    permanentes = conn.execute(
+        "SELECT COUNT(*) FROM revistas WHERE recepcion_permanente=1").fetchone()[0]
+    conn.close()
+    return convocatorias, permanentes
+
+
 def reunir(dias_aviso=DIAS_AVISO, dias_nuevas=DIAS_NUEVAS):
     """Devuelve (por_vencer, nuevas, permanentes_nuevas)."""
-    convocatorias = obtener_convocatorias()
+    convocatorias, permanentes = _fuente_de_datos()
+    # La base se reconstruye en CI y todas figurarían como halladas hoy: la
+    # primera detección real viene de la memoria versionada (solo lectura).
+    deteccion.aplicar(convocatorias)
 
     por_vencer = []
     for c in convocatorias:
@@ -66,11 +94,6 @@ def reunir(dias_aviso=DIAS_AVISO, dias_nuevas=DIAS_NUEVAS):
         if hallada >= corte:
             nuevas.append(c)
     nuevas.sort(key=lambda c: (c['fecha_cierre'] or '9999', c['revista']))
-
-    conn = conectar()
-    permanentes = conn.execute(
-        "SELECT COUNT(*) FROM revistas WHERE recepcion_permanente=1").fetchone()[0]
-    conn.close()
 
     return por_vencer, nuevas, permanentes
 
@@ -187,7 +210,7 @@ def construir_bienvenida(nombre, email, remitente):
               f'Hola{" " + escape(pila) if pila else ""},</p>'
               '<p style="margin:0 0 22px;color:#3d4552;">'
               'Quedaste suscriptx al resumen semanal de convocatorias. '
-              'Desde ahora te llega <b>todos los lunes</b>.</p>')
+              'Desde ahora te llega <b>todos los martes</b>.</p>')
 
     cuerpo = f'''
   <div style="background:#f2f4f7;border-radius:10px;padding:16px 19px;
@@ -340,7 +363,7 @@ def enviar_bienvenida(nombre, email):
                construir_bienvenida(nombre, email, cfg['remitente']),
                f"Hola {_nombre_pila(nombre)},\n\n"
                "Quedaste suscriptx al resumen semanal de convocatorias a "
-               "dossier. Te llega todos los lunes.\n\n"
+               "dossier. Te llega todos los martes.\n\n"
                "Panel completo: "
                "https://eaguirre25.github.io/PANEL_REVISTAS_ACADEMICAS/\n\n"
                f"Para darte de baja, respondé este correo con el asunto "

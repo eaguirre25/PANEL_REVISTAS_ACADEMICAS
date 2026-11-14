@@ -13,8 +13,11 @@ Sociales y Humanidades según sus sistemas de indización":
   Nivel 3  Bases Referenciales y Catálogos Regionales: Philosopher's Index,
            Sociological Abs., MLA, ERIC, PsycInfo, CLACSO, Latindex Catálogo…
 
-Como todas las revistas de este catálogo pertenecen al Núcleo Básico, el piso
-de todas es Nivel 2. Suben a Nivel 1 las que además estén en Scopus o SciELO.
+El piso de Nivel 2 vale SOLO para las revistas del Núcleo Básico (origen NBRA):
+suben a Nivel 1 las que además estén en Scopus o SciELO. Las demás (origen
+«externa») solo reciben Nivel 1 si están en Scopus o SciELO.org, que la
+resolución nombra por índice, sin importar el país; si no, quedan SIN nivel,
+porque con estos datos no se puede afirmar que estén en ninguna base de Nivel 2.
 
 ADVERTENCIA de la propia resolución: la jerarquización es de los *índices*, no
 de cada revista. "Dentro de un mismo nivel o grupo conviven revistas que, si
@@ -176,15 +179,18 @@ def consultar_openalex(sesion, issns):
     return {}
 
 
-def nivel_conicet(en_scopus, en_scielo):
+def nivel_conicet(en_scopus, en_scielo, origen='NBRA'):
     """
-    Nivel según Res. 2249/14. Todas las revistas del catálogo están en el
-    Núcleo Básico, que la resolución ubica en Nivel 2; Scopus y SciELO.org
-    están nombrados en Nivel 1.
+    Nivel según Res. 2249/14. Scopus y SciELO.org están nombrados en Nivel 1.
+    El Núcleo Básico (origen NBRA) está en Nivel 2. Una revista de otro
+    origen que no esté en Scopus ni en SciELO queda sin nivel (None): darle
+    Nivel 2 sería afirmar una pertenencia al Núcleo Básico que no tiene.
     """
     if en_scopus or en_scielo:
         return 1
-    return 2
+    if (origen or 'NBRA') == 'NBRA':
+        return 2
+    return None
 
 
 def actualizar_indizacion(workers=6, progreso=None):
@@ -196,7 +202,7 @@ def actualizar_indizacion(workers=6, progreso=None):
     sesion = requests.Session()
     sesion.headers.update(HEADERS)
 
-    resumen = dict(revisadas=0, nivel1=0, nivel2=0, scopus=0, scielo=0,
+    resumen = dict(revisadas=0, nivel1=0, nivel2=0, sin_nivel=0, scopus=0, scielo=0,
                    doaj=0, sin_openalex=0)
 
     def procesar(rv):
@@ -218,7 +224,8 @@ def actualizar_indizacion(workers=6, progreso=None):
                      en_scielo=en_scielo, en_doaj=oa.get('en_doaj'),
                      openalex_core=oa.get('openalex_core'),
                      h_index=oa.get('h_index'), works_count=oa.get('works_count'))
-        datos['nivel_conicet'] = nivel_conicet(en_scopus, en_scielo)
+        datos['nivel_conicet'] = nivel_conicet(en_scopus, en_scielo,
+                                               rv.get('origen'))
         return rv, datos, bool(oa)
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
@@ -228,7 +235,7 @@ def actualizar_indizacion(workers=6, progreso=None):
             guardar_indizacion(rv['id'], datos)
 
             resumen['revisadas'] += 1
-            resumen['nivel1' if datos['nivel_conicet'] == 1 else 'nivel2'] += 1
+            resumen[{1: 'nivel1', 2: 'nivel2'}.get(datos['nivel_conicet'], 'sin_nivel')] += 1
             resumen['scopus'] += bool(datos['en_scopus'])
             resumen['scielo'] += bool(datos['en_scielo'])
             resumen['doaj'] += bool(datos['en_doaj'])
@@ -241,7 +248,7 @@ def actualizar_indizacion(workers=6, progreso=None):
     registrar_actualizacion(
         "indizacion",
         f"{resumen['revisadas']} revistas: {resumen['nivel1']} Nivel 1, "
-        f"{resumen['nivel2']} Nivel 2 | Scopus {resumen['scopus']}, "
+        f"{resumen['nivel2']} Nivel 2, {resumen['sin_nivel']} sin nivel | Scopus {resumen['scopus']}, "
         f"SciELO {resumen['scielo']}, DOAJ {resumen['doaj']}")
     return resumen
 

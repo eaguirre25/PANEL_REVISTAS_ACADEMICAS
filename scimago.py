@@ -38,14 +38,14 @@ ANIO = "2025"
 PATRON = f"scimagojr {ANIO}*.csv"
 PATRON_TODOS = "scimagojr*.csv"
 
-# País del CSV -> como se nombra en el panel.
+# País del CSV -> como se nombra en el panel. Jamaica y Trinidad y Tobago
+# quedan fuera a propósito (decisión del autor: no son parte del alcance).
 PAISES = {
     'Argentina': 'Argentina', 'Brazil': 'Brasil', 'Chile': 'Chile',
     'Colombia': 'Colombia', 'Mexico': 'México', 'Peru': 'Perú',
     'Venezuela': 'Venezuela', 'Ecuador': 'Ecuador', 'Cuba': 'Cuba',
     'Costa Rica': 'Costa Rica', 'Uruguay': 'Uruguay', 'Paraguay': 'Paraguay',
     'Bolivia': 'Bolivia', 'Panama': 'Panamá', 'Puerto Rico': 'Puerto Rico',
-    'Trinidad and Tobago': 'Trinidad y Tobago', 'Jamaica': 'Jamaica',
     'Spain': 'España', 'Portugal': 'Portugal',
 }
 

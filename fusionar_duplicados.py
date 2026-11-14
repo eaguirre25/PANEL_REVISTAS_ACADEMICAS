@@ -56,22 +56,76 @@ def detectar():
                 grupos.append((conservar, [d]))
             else:
                 sospechosos.append((issn, conservar, d))
+    # Segunda vía: mismo nombre normalizado y mismo país, aunque el ISSN falte
+    # o difiera (la misma revista con su ISSN impreso en una fila y el online
+    # en otra). Nombres iguales en países distintos NO se tocan: «Palabra
+    # clave» de Colombia y la de Argentina son revistas diferentes.
+    ya = {r['id'] for _, ds in grupos for r in ds} | {g['id'] for g, _ in grupos}
+    por_nombre = {}
+    for f in filas:
+        r = dict(f)
+        if r['id'] in ya:
+            continue
+        k = (_nombre_norm(r['nombre']), _pais_base(r['pais']))
+        if k[0]:
+            por_nombre.setdefault(k, []).append(r)
+    for rs in por_nombre.values():
+        if len(rs) < 2:
+            continue
+        nbra = [r for r in rs if (r['origen'] or 'NBRA') == 'NBRA']
+        conservar = (nbra or sorted(rs, key=lambda r: r['id']))[0]
+        issn_c = {_norm(conservar['issn_impreso']), _norm(conservar['issn_online'])} - {''}
+        for d in rs:
+            if d['id'] == conservar['id']:
+                continue
+            issn_d = {_norm(d['issn_impreso']), _norm(d['issn_online'])} - {''}
+            # Si ambas filas traen ISSN y no comparten ninguno, son revistas
+            # distintas con el mismo título («Fronteiras» de Anápolis y la de
+            # la UFFS): no se fusionan, se reportan para revisión manual.
+            if issn_c and issn_d and not (issn_c & issn_d):
+                sospechosos.append(('; '.join(sorted(issn_c | issn_d)), conservar, d))
+            else:
+                grupos.append((conservar, [d]))
     return grupos, sospechosos
 
 
+def _sin_acentos(s):
+    s = (s or '').lower()
+    for x, y in zip("áéíóúàãâêôõçñü", "aeiouaaaeoocnu"):
+        s = s.replace(x, y)
+    return s
+
+
+def _nombre_norm(s):
+    """Nombre sin mayúsculas, acentos ni paréntesis: «Crítica y Resistencias
+    (En línea)» y «Crítica y resistencias» dan lo mismo."""
+    s = re.sub(r'\([^)]*\)', ' ', _sin_acentos(s))
+    return ' '.join(re.sub(r'[^a-z0-9 ]', ' ', s).split())
+
+
+def _pais_base(p):
+    """'Argentina/regional' -> 'argentina'."""
+    return _sin_acentos((p or '').split('/')[0]).strip()
+
+
 def _parecidos(a, b, umbral=0.45):
-    """Similitud laxa de títulos, sin acentos ni palabras vacías."""
+    """
+    Similitud laxa de títulos, sin acentos ni palabras vacías.
+
+    Con ISSN compartido también vale la contención: «Psicoperspectivas» está
+    dentro de «Psicoperspectivas. Individuo y Sociedad», que es la misma
+    revista con el subtítulo.
+    """
     def tok(s):
-        s = (s or '').lower()
-        for x, y in zip("áéíóúàãâêôõçñü", "aeiouaaaeoocnu"):
-            s = s.replace(x, y)
         vacias = {'revista', 'de', 'del', 'la', 'el', 'los', 'las', 'y', 'en',
                   'linea', 'journal', 'da', 'do'}
-        return {t for t in re.sub(r'[^a-z0-9 ]', ' ', s).split()
+        return {t for t in re.sub(r'[^a-z0-9 ]', ' ', _sin_acentos(s)).split()
                 if t and t not in vacias}
     ta, tb = tok(a), tok(b)
     if not ta or not tb:
         return False
+    if ta <= tb or tb <= ta:
+        return True
     return len(ta & tb) / max(len(ta), len(tb)) >= umbral
 
 
@@ -120,11 +174,15 @@ def fusionar(aplicar=True):
                     conn.execute(
                         """INSERT INTO convocatorias
                            (revista_id, titulo, descripcion, fecha_cierre, url,
-                            fuente, tipo, es_dossier, tema, activa)
-                           VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                            fuente, tipo, es_dossier, tema, activa,
+                            fecha_reapertura, sigue_recibiendo,
+                            fecha_encontrada)
+                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                         (conservar['id'], c['titulo'], c['descripcion'],
                          c['fecha_cierre'], c['url'], c['fuente'], c['tipo'],
-                         c['es_dossier'], c['tema'], c['activa']))
+                         c['es_dossier'], c['tema'], c['activa'],
+                         c['fecha_reapertura'], c['sigue_recibiendo'],
+                         c['fecha_encontrada']))
                 except Exception:
                     pass
             conn.execute("DELETE FROM convocatorias WHERE revista_id = ?", (d['id'],))

@@ -11,7 +11,8 @@ name: Actualizar datos y publicar sitio
 # desde la máquina de trabajo con publicar.bat.
 #
 # Por eso el paso «Verificar que no se pierdan datos» aborta la publicación si
-# la reconstrucción sale mucho más pobre que lo ya publicado.
+# la reconstrucción sale mucho más pobre que lo ya publicado: en cantidad de
+# revistas, de convocatorias y de sitios leídos con éxito.
 on:
   schedule:
     - cron: '0 9 * * 1'
@@ -38,7 +39,11 @@ jobs:
           cache: pip
 
       - name: Instalar dependencias
-        run: pip install -r requirements.txt
+        run: pip install -r requirements-ci.txt
+
+      # Si una prueba falla, la corrida se detiene ANTES de rastrear y publicar.
+      - name: Pruebas
+        run: python -m pytest -q
 
       # La lista de fuentes de Scopus pesa ~26 MB y cambia una vez por mes:
       # se cachea para no volver a descargarla en cada corrida.
@@ -109,6 +114,12 @@ jobs:
         run: python resolver_issn.py
         continue-on-error: true
 
+      # resolver_issn completa ISSN que faltaban, y recién entonces se ve que
+      # dos filas son la misma revista: se fusiona de nuevo antes de publicar.
+      - name: Fusionar duplicados (segunda pasada)
+        run: python fusionar_duplicados.py
+        continue-on-error: true
+
       # ── Publicación ───────────────────────────────────────────────────
       - name: Generar el sitio
         run: python generar_sitio.py
@@ -126,20 +137,69 @@ jobs:
                                  capture_output=True, text=True,
                                  encoding='utf-8').stdout or '{}'
           previo = json.loads(crudo)
-          a = (previo.get('estadisticas') or {}).get('revistas', 0)
-          b = (nuevo.get('estadisticas') or {}).get('revistas', 0)
-          print(f'revistas: publicadas {a} -> reconstruidas {b}')
-          if a and b < a * 0.9:
-              print(f'ABORTA: la reconstruccion pierde {a-b} revistas '
-                    f'({(1-b/a)*100:.0f}%). No se publica.')
+          ea = previo.get('estadisticas') or {}
+          eb = nuevo.get('estadisticas') or {}
+
+          def leidas(e):
+              # Revistas cuyo sitio se leyó bien: si el rastreo falla en bloque
+              # (servidor bloqueado, red caída) este número se desploma.
+              return (e.get('rev_con_conv', 0) + e.get('rev_sin_conv', 0)
+                      + e.get('rev_sin_pagina', 0))
+
+          controles = [
+              ('revistas', ea.get('revistas', 0), eb.get('revistas', 0), 0.9),
+              ('convocatorias', ea.get('convocatorias', 0),
+               eb.get('convocatorias', 0), 0.6),
+              ('revistas leidas con exito', leidas(ea), leidas(eb), 0.8),
+          ]
+          falla = False
+          for nombre, a, b, piso in controles:
+              print(f'{nombre}: publicadas {a} -> reconstruidas {b}')
+              if a and b < a * piso:
+                  print(f'ABORTA: {nombre} cae {(1-b/a)*100:.0f}% '
+                        f'(minimo tolerado {(1-piso)*100:.0f}%). No se publica.')
+                  falla = True
+          if falla:
               sys.exit(1)
+          PY
+
+      - name: Resumen de la corrida
+        if: always()
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          try:
+              d = json.load(open('docs/datos.json', encoding='utf-8'))
+          except Exception as err:
+              print('## Corrida de actualización')
+              print(f'No se pudo leer docs/datos.json: {err}')
+              raise SystemExit
+          e = d.get('estadisticas', {})
+          print('## Corrida de actualización')
+          print(f"Generado: {e.get('generado')}. Si la guardia de datos abortó, "
+                "estos números son los de la reconstrucción rechazada.\n")
+          print('| Indicador | Valor |')
+          print('|---|---|')
+          for k, t in [('revistas', 'Revistas'),
+                       ('convocatorias', 'Convocatorias'),
+                       ('arrastradas', 'De ellas, arrastradas de la semana pasada'),
+                       ('con_fecha', 'Con fecha de cierre'),
+                       ('nuevas', 'Marcadas «Nueva»'),
+                       ('permanentes', 'Recepción permanente'),
+                       ('revision_manual', 'Revistas que requieren revisión manual')]:
+              print(f'| {t} | {e.get(k, 0)} |')
+          print('\n### Estado de lectura de los sitios\n')
+          print('| Estado | Revistas |')
+          print('|---|---|')
+          for x in d.get('estados', []):
+              print(f"| {x['estado']} | {x['n']} |")
           PY
 
       - name: Publicar si hubo cambios
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/
+          git add docs/ primera_deteccion.json
           if git diff --cached --quiet; then
             echo "Sin cambios en los datos."
           else

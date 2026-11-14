@@ -1,0 +1,10 @@
+# Dependencias de GitHub Actions (rastreo, sitio, boletín y pruebas).
+# Más chicas que requirements.txt: sin Streamlit, pandas, schedule ni Playwright,
+# que solo usan la interfaz local y el navegador asistido. Se fijan los topes
+# de versión mayor para que una publicación nueva no rompa la corrida del lunes.
+requests>=2.31,<3
+beautifulsoup4>=4.12,<5
+lxml>=4.9,<7
+truststore>=0.9,<1
+openpyxl>=3.1,<4
+pytest>=8,<10

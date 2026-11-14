@@ -1,6 +1,6 @@
 # 📚 Panel de revistas académicas iberoamericanas
 
-Rastrea **convocatorias y llamados a dossier** abiertos en 502 revistas de
+Rastrea **convocatorias y llamados a dossier** abiertos en cerca de mil revistas de
 ciencias sociales y humanidades de Iberoamérica, y avisa cuáles están por
 cerrar.
 
@@ -18,9 +18,9 @@ visitar de a uno.
 
 | | |
 |---|---|
-| **502 revistas** | 324 del Núcleo Básico argentino + 178 de otros 19 países |
-| **174 convocatorias** activas | 84 son dossiers, 57 con el tema identificado |
-| **68 revistas** de recepción permanente | reciben artículos todo el año |
+| **~990 revistas** | ~310 del Núcleo Básico argentino + ~670 de otros países y catálogos |
+| **Convocatorias** activas | cientos; una parte son dossiers, y de ellos algunos con el tema identificado |
+| **Revistas de recepción permanente** | reciben artículos todo el año |
 | **Nivel CONICET** | calculado según la Res. D 2249/2014 |
 | **Indización verificada** | Scopus, SciELO y DOAJ, contra fuentes oficiales |
 | **Boletín semanal** | resumen por correo de lo que vence y lo que apareció |
@@ -146,6 +146,22 @@ En Linux/macOS, vía cron:
 
 ---
 
+## Pruebas
+
+```bash
+pip install -r requirements-ci.txt
+python -m pytest -q
+```
+
+Cubren la extracción de fechas y dossiers (español, portugués e inglés), el
+nivel CONICET, la memoria de primera detección, la fusión de duplicados, los
+reintentos del rastreo, el arrastre de convocatorias y el boletín. La corrida
+semanal de GitHub Actions las ejecuta antes de rastrear: si una falla, no se
+publica nada.
+
+**Interfaz oficial:** el sitio estático de `docs/`. La app de Streamlit
+(`app.py`) es solo para uso local.
+
 ## Cómo funciona
 
 ```
@@ -156,6 +172,9 @@ permanentes.py   /about/submissions → recepción abierta todo el año
 indizacion.py    Scopus + SciELO + DOAJ → nivel CONICET
 resolver_issn.py completa ISSN faltantes vía OpenAlex
 boletin.py       informe HTML + envío por correo
+deteccion.py     memoria versionada (primera_deteccion.json) de cuándo se vio
+                 cada convocatoria; sin ella la marca «Nueva» y el boletín
+                 marcarían todo como nuevo, porque CI reconstruye la base
 app.py           interfaz Streamlit
 ```
 
@@ -185,8 +204,8 @@ una por una:
 - **Nivel 3** — Latindex Catálogo, Philosopher's Index, MLA, ERIC, PsycInfo…
 
 Las revistas del NBRA son **Nivel 2 como piso** y suben a Nivel 1 con Scopus o
-SciELO. Las extranjeras no tienen ese piso: si no están en Scopus ni SciELO su
-nivel queda *sin determinar*, porque haría falta verificar REDALyC o Latindex
+SciELO. Las que no son del NBRA (origen «externa») no tienen ese piso: si no están en Scopus ni SciELO su
+nivel queda *sin nivel* (`None`), porque haría falta verificar REDALyC o Latindex
 Catálogo, que no publican listados abiertos comparables.
 
 > La resolución advierte: *«dentro de un mismo nivel o grupo conviven revistas
@@ -299,3 +318,5 @@ MIT — ver [LICENSE](LICENSE).
 El código es libre. Los **datos** provienen de terceros (CAICYT-CONICET,
 Elsevier, SciELO, DOAJ, OpenAlex) y se rigen por sus propias condiciones de
 uso.
+
+> Las cifras exactas están en el panel publicado; este README evita repetirlas para no quedar desactualizado.

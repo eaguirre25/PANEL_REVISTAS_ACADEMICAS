@@ -1,11 +1,12 @@
 name: Enviar boletín semanal
 
-# El martes comienza a preparar los datos a las 11:00 de Argentina
-# y espera hasta las 13:00 para enviar el correo. Así el horario del mail
-# no depende de cuánto tarde el rastreo.
+# El martes envía el resumen a las 13:00 de Argentina. NO vuelve a rastrear los
+# sitios: lee docs/datos.json, que publicó la corrida del lunes. Si esa
+# corrida fue abortada por la guardia de datos, el boletín usa lo último
+# publicado (y se niega a enviar si no hay convocatorias).
 on:
   schedule:
-    - cron: '0 14 * * 2'   # martes 11:00 Argentina (UTC-3)
+    - cron: '0 16 * * 2'   # martes 13:00 Argentina (UTC-3)
   workflow_dispatch:
   push:
     branches: [main]
@@ -25,9 +26,9 @@ jobs:
     # explícitamente la marca [enviar-boletin]. Los cambios normales del
     # workflow no mandan correos por accidente.
     if: github.event_name != 'push' || contains(github.event.head_commit.message, '[enviar-boletin]')
-    name: Preparar datos y enviar boletín
+    name: Enviar boletín
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 15
 
     steps:
       - name: Descargar repositorio
@@ -40,58 +41,7 @@ jobs:
           cache: pip
 
       - name: Instalar dependencias
-        run: pip install -r requirements.txt
-
-      - name: Recuperar lista de Scopus del caché
-        uses: actions/cache@v4
-        with:
-          path: datos/scopus_source_list.xlsx
-          key: scopus-boletin-v1
-          restore-keys: scopus-
-
-      # La base SQLite no se publica porque contiene datos personales.
-      # Por eso el martes se reconstruyen los datos públicos antes del envío.
-      - name: Reconstruir catálogo
-        run: |
-          python catalogo.py || true
-          python externas.py || true
-          python scimago.py || true
-          python enriquecer_docx.py || true
-          python sitios_verificados.py || true
-          python fusionar_duplicados.py || true
-
-      - name: Reconstruir convocatorias
-        run: |
-          python convocatorias.py || true
-          python permanentes.py || true
-          python latinrev.py || true
-          python manuales.py || true
-          python recalcular_temas.py || true
-          python indizacion.py || true
-
-      - name: Ajustar textos al envío de los martes
-        run: |
-          sed -i 's/todos los lunes/todos los martes/g' boletin.py
-          sed -i 's/Te llega todos los lunes/Te llega todos los martes/g' boletin.py
-
-      - name: Esperar hasta las 13:00 de Argentina
-        if: github.event_name == 'schedule'
-        run: |
-          python - <<'PY'
-          import time
-          from datetime import datetime, time as dtime
-          from zoneinfo import ZoneInfo
-
-          tz = ZoneInfo('America/Argentina/Buenos_Aires')
-          ahora = datetime.now(tz)
-          objetivo = datetime.combine(ahora.date(), dtime(13, 0), tzinfo=tz)
-          segundos = (objetivo - ahora).total_seconds()
-          if segundos > 0:
-              print(f'Esperando {segundos/60:.1f} minutos hasta las 13:00 de Argentina')
-              time.sleep(segundos)
-          else:
-              print('La preparación terminó después de las 13:00; se envía inmediatamente.')
-          PY
+        run: pip install -r requirements-ci.txt
 
       - name: Enviar resumen semanal
         env:
@@ -99,6 +49,7 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
           BOLETIN_SUSCRIPTORES: ${{ secrets.BOLETIN_SUSCRIPTORES }}
+          BOLETIN_FUENTE: publicado
         run: python boletin_ci.py
 
       - name: Registrar resultado

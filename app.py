@@ -1,4 +1,11 @@
-"""Interfaz web del Tracker de Revistas CONICET."""
+"""
+Interfaz web LOCAL (Streamlit) del Tracker de Revistas CONICET.
+
+La interfaz pública y oficial es el sitio estático que genera generar_sitio.py
+(carpeta docs/). Esta aplicación se conserva para uso local —suscriptores,
+boletín manual—, pero no recibe las mejoras del sitio (fechas, nivel CONICET,
+arrastre de convocatorias, accesibilidad). Si dejás de usarla, podés archivarla.
+"""
 import re
 from datetime import date, datetime
 
