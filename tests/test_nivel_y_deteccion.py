@@ -41,3 +41,10 @@ def test_deteccion_solo_lectura_no_escribe(tmp_path, monkeypatch):
     deteccion.aplicar([{'revista': 'X', 'titulo': 'Y',
                         'fecha_encontrada': '2026-11-16 09:00:00'}])
     assert not ruta.exists()
+
+
+def test_alcance_geografico_sin_jamaica_ni_trinidad():
+    import scimago
+    assert 'Jamaica' not in scimago.PAISES
+    assert 'Trinidad and Tobago' not in scimago.PAISES
+    assert scimago.PAISES['Portugal'] == 'Portugal' and scimago.PAISES['Brazil'] == 'Brasil'
